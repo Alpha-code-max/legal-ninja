@@ -29,13 +29,15 @@ export interface GameSession {
   started_at: number;
   ended_at: number | null;
   status: "idle" | "lobby" | "active" | "finished";
+  level_direction: "up" | "down" | null;
+  new_badges: string[];
 }
 
 interface GameActions {
-  startSession: (config: Omit<GameSession, "questions" | "current_index" | "answers" | "score" | "streak" | "xp_earned" | "started_at" | "ended_at" | "status">) => void;
+  startSession: (config: Omit<GameSession, "questions" | "current_index" | "answers" | "score" | "streak" | "xp_earned" | "started_at" | "ended_at" | "status" | "level_direction" | "new_badges">) => void;
   setQuestions: (questions: Question[]) => void;
   submitAnswer: (selected: string, time_taken_ms: number) => { correct: boolean; xp_gained: number };
-  endSession: () => void;
+  endSession: (result?: { levelDirection?: "up" | "down" | null; newBadges?: string[] }) => void;
   resetSession: () => void;
   setQuestionExplanation: (question_id: string, explanation: string) => void;
   setQuestionCorrectOption: (question_id: string, correct_option: string) => void;
@@ -57,6 +59,8 @@ const DEFAULT_SESSION: GameSession = {
   started_at: 0,
   ended_at: null,
   status: "idle",
+  level_direction: null,
+  new_badges: [],
 };
 
 export const useGameStore = create<GameSession & GameActions>()((set, get) => ({
@@ -92,7 +96,7 @@ export const useGameStore = create<GameSession & GameActions>()((set, get) => ({
     return { correct, xp_gained };
   },
 
-  endSession: () => set({ ended_at: Date.now(), status: "finished" }),
+  endSession: (result?) => set({ ended_at: Date.now(), status: "finished", level_direction: result?.levelDirection ?? null, new_badges: result?.newBadges ?? [] }),
 
   resetSession: () => set(DEFAULT_SESSION),
 

@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserStore, getTotalBalance } from "@/lib/store/user-store";
 import { MONETIZATION, type Bundle, type Pass } from "@/lib/config/monetization";
@@ -36,12 +37,45 @@ export default function StorePage() {
   const total = getTotalBalance(user);
   const [tab, setTab]           = useState<Tab>("bundles");
   const [purchased, setPurchased] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<string | null>(null);
 
-  const handleBundlePurchase = (bundle: Bundle) => {
-    user.addQuestions(0, bundle.questions, 0);
-    user.addXP(50);
-    setPurchased(`${bundle.questions} questions added! +50 XP 🎉`);
-    setTimeout(() => setPurchased(null), 3500);
+  // Check for ?payment=success query param after Paystack redirect
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      setPurchased("✅ Payment received! Your questions will appear shortly.");
+      setTimeout(() => setPurchased(null), 5000);
+      window.history.replaceState({}, "", "/store");
+    }
+  }, []);
+
+  const handleBundlePurchase = async (bundle: Bundle, index: number) => {
+    if (!user.uid) { router.push("/auth/sign-in"); return; }
+    setProcessing(`bundle-${index}`);
+    try {
+      const result = await api.buyBundle(index);
+      window.location.href = result.authorization_url;
+    } catch {
+      setPurchased("❌ Payment failed — please try again.");
+      setTimeout(() => setPurchased(null), 3500);
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handlePassPurchase = async (pass: Pass) => {
+    if (!user.uid) { router.push("/auth/sign-in"); return; }
+    setProcessing(`pass-${pass.id}`);
+    try {
+      const result = await api.buyPass(pass.id);
+      window.location.href = result.authorization_url;
+    } catch {
+      setPurchased("❌ Payment failed — please try again.");
+      setTimeout(() => setPurchased(null), 3500);
+    } finally {
+      setProcessing(null);
+    }
   };
 
   return (
@@ -172,8 +206,9 @@ export default function StorePage() {
                 </div>
                 <div className="text-right relative z-10">
                   <p className="text-xl font-black font-mono neon-text-cyan">{formatNGN(bundle.price_ngn)}</p>
-                  <NeonButton variant="cyan" size="sm" onClick={() => handleBundlePurchase(bundle)} className="mt-2">
-                    Buy Now
+                  <NeonButton variant="cyan" size="sm" onClick={() => handleBundlePurchase(bundle, i)} className="mt-2"
+                    disabled={processing === `bundle-${i}`}>
+                    {processing === `bundle-${i}` ? "…" : "Buy Now"}
                   </NeonButton>
                 </div>
               </motion.div>
@@ -209,13 +244,10 @@ export default function StorePage() {
                     </div>
                     <p className="text-2xl font-black font-mono neon-text-purple">{formatNGN(pass.price_ngn)}</p>
                   </div>
-                  <NeonButton variant="purple" fullWidth size="sm" onClick={() => {
-                    const expires = Date.now() + pass.duration_days * 86400000;
-                    user.setUser({ active_passes: [...user.active_passes, { id: pass.id, name: pass.name, expires_at: expires, subject_specific: pass.subject_specific }] });
-                    setPurchased(`${pass.name} activated! 🎉`);
-                    setTimeout(() => setPurchased(null), 3500);
-                  }}>
-                    ⚡ Activate Pass
+                  <NeonButton variant="purple" fullWidth size="sm"
+                    onClick={() => handlePassPurchase(pass)}
+                    disabled={processing === `pass-${pass.id}`}>
+                    {processing === `pass-${pass.id}` ? "…" : "⚡ Activate Pass"}
                   </NeonButton>
                 </div>
               </motion.div>

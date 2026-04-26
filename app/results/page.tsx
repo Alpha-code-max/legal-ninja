@@ -186,24 +186,13 @@ function ResultsContent() {
     return q?.subject ?? "";
   }).filter(Boolean);
 
-  // Level change: compare pre/post (we track via user store's last operation)
-  const [levelDirection, setLevelDirection] = useState<"up" | "down" | null>(null);
+  // Level direction and new badges come directly from the server via game store
+  const levelDirection = game.level_direction;
+  const newBadges      = game.new_badges ?? [];
 
   useEffect(() => {
     if (game.status !== "finished") router.replace("/dashboard");
   }, [game.status, router]);
-
-  // Determine level direction from user store recent history
-  useEffect(() => {
-    if (isGuest || game.answers.length === 0) return;
-    // Check if there was a level change recorded in the last answer sequence
-    const lastCorrect = game.answers[game.answers.length - 1]?.correct ?? false;
-    const result = user.recordAnswer(lastCorrect);
-    // Note: recordAnswer already ran during quiz; this is just reading the direction signal
-    // We use the xp_earned to infer: positive level change if grade is good
-    if (game.xp_earned > 50 && grade.grade <= "B") setLevelDirection("up");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const gradeColor = GRADE_COLORS[grade.grade] ?? "#d1d5db";
 
@@ -328,6 +317,23 @@ function ResultsContent() {
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>✓ Correct</p>
           </div>
         </motion.div>
+
+        {/* New Badges earned this session */}
+        {newBadges.length > 0 && (
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8 }}
+            className="cyber-card p-4 text-center space-y-2"
+            style={{ borderColor: "color-mix(in srgb, var(--cyber-gold) 50%, transparent)" }}>
+            <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--cyber-gold)" }}>🏅 New Badge{newBadges.length > 1 ? "s" : ""} Earned!</p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {newBadges.map((b) => (
+                <span key={b} className="px-3 py-1 rounded-full text-xs font-bold border"
+                  style={{ borderColor: "color-mix(in srgb, var(--cyber-gold) 40%, transparent)", background: "color-mix(in srgb, var(--cyber-gold) 10%, transparent)", color: "var(--cyber-gold)" }}>
+                  {b}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Spaced Repetition Hint */}
         <SpacedRepetitionHint wrongSubjects={wrongSubjects} />

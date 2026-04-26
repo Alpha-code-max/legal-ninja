@@ -97,11 +97,26 @@ function QuizContent() {
   const [offlineQueue, setOfflineQueue]     = useState<Question[]>([]);
   const [isOffline, setIsOffline]           = useState(false);
   const [combo, setCombo]                   = useState(0);
+  const [dailyBlocked, setDailyBlocked]     = useState(false);
 
   const game = useGameStore();
   const user = useUserStore();
   const guest = useGuestStore();
   const isGuest = guest.is_guest || !user.uid;
+
+  // Detect mode-specific constraints on mount
+  useEffect(() => {
+    // Daily challenge: one attempt per day per user
+    if (mode === "daily_challenge" && !isGuest) {
+      const key = `daily_challenge_${user.uid}_${new Date().toISOString().slice(0, 10)}`;
+      if (localStorage.getItem(key)) setDailyBlocked(true);
+    }
+    // Weak area focus: pre-select first weak area
+    if (mode === "weak_area_focus" && user.weak_areas.length > 0) {
+      setSelectedSubject(user.weak_areas[0]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Countdown tick — fires nextAction when it hits 0
   useEffect(() => {
@@ -170,6 +185,19 @@ function QuizContent() {
   }, [track, router, isGuest, guest]);
 
   const startGame = async () => {
+    // Daily challenge: enforce one attempt per day
+    if (mode === "daily_challenge" && !isGuest) {
+      const key = `daily_challenge_${user.uid}_${new Date().toISOString().slice(0, 10)}`;
+      if (localStorage.getItem(key)) {
+        setLoadError("You've already completed today's challenge. Come back tomorrow!");
+        return;
+      }
+    }
+    // Weak area focus: require at least one weak area
+    if (mode === "weak_area_focus" && user.weak_areas.length === 0 && !isGuest) {
+      setLoadError("No weak areas detected yet — play more games to identify topics you need to review.");
+      return;
+    }
     if (isGuest) {
       guest.resetIfNewDay();
       const remaining = GUEST_DAILY_LIMIT - guest.daily_questions_used;
@@ -251,8 +279,20 @@ function QuizContent() {
     const nextIndex = questionIndex + 1;
     if (nextIndex >= selectedCount) {
       nextActionRef.current = async () => {
-        if (sessionId && !isOffline && !isGuest) { try { await api.endSession(sessionId); } catch { /* offline */ } }
-        game.endSession();
+        let endResult: { levelDirection?: "up" | "down" | null; newBadges?: string[] } = {};
+        if (sessionId && !isOffline && !isGuest) {
+          try {
+            const r = await api.endSession(sessionId);
+            endResult = { levelDirection: r.levelDirection, newBadges: r.newBadges };
+            if (r.newBadges?.length) user.addBadges(r.newBadges);
+          } catch { /* offline */ }
+        }
+        // Mark daily challenge as completed for today
+        if (mode === "daily_challenge" && !isGuest && user.uid) {
+          const key = `daily_challenge_${user.uid}_${new Date().toISOString().slice(0, 10)}`;
+          localStorage.setItem(key, "1");
+        }
+        game.endSession(endResult);
         router.push("/results");
       };
       setCountdown(20);
@@ -304,6 +344,25 @@ function QuizContent() {
             <div className="rounded-xl p-3 text-xs text-center"
                  style={{ background: "color-mix(in srgb, var(--cyber-gold) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-gold) 25%, transparent)", color: "var(--cyber-gold)" }}>
               🥷 Guest Mode — {Math.max(0, GUEST_DAILY_LIMIT - guest.daily_questions_used)} / {GUEST_DAILY_LIMIT} questions left today · Progress not saved
+            </div>
+          )}
+
+          {/* Daily challenge — already played today */}
+          {mode === "daily_challenge" && dailyBlocked && (
+            <div className="rounded-xl p-4 text-center space-y-2"
+               style={{ color: "var(--cyber-gold)", background: "color-mix(in srgb, var(--cyber-gold) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-gold) 30%, transparent)" }}>
+              <p className="text-2xl">🎯</p>
+              <p className="text-sm font-black">Daily challenge complete!</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>You've already taken today's challenge. Come back tomorrow for a fresh set.</p>
+            </div>
+          )}
+
+          {/* Weak area focus — show target subjects */}
+          {mode === "weak_area_focus" && !isGuest && user.weak_areas.length > 0 && (
+            <div className="rounded-xl p-3 text-xs"
+               style={{ color: "var(--cyber-red)", background: "color-mix(in srgb, var(--cyber-red) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-red) 25%, transparent)" }}>
+              <p className="font-black mb-1">🔥 Targeting your weak area:</p>
+              <p className="font-bold">{user.weak_areas[0].replace(/_/g, " ")}</p>
             </div>
           )}
 

@@ -2,24 +2,25 @@ import { Router, type Request } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { validate } from "../middleware/validate";
-import { query, queryOne } from "../db/client";
-
+import { MultiplayerRoom } from "../models/MultiplayerRoom";
 import { getOrGenerateQuestions } from "../services/question";
+import mongoose from "mongoose";
 
 const router = Router();
 
 const CreateRoomSchema = z.object({
-  mode: z.enum(["duel", "battle_royale"]),
-  track: z.enum(["law_school_track", "undergraduate_track"]),
-  subject: z.string().max(60).optional(),
-  difficulty: z.enum(["easy", "medium", "hard", "expert"]).default("medium"),
+  mode:           z.enum(["duel", "battle_royale"]),
+  track:          z.enum(["law_school_track", "undergraduate_track"]),
+  subject:        z.string().max(60).optional(),
+  difficulty:     z.enum(["easy", "medium", "hard", "expert"]).default("medium"),
   question_count: z.number().int().min(5).max(20).default(10),
 });
 
 function randomCode(): string {
-  return Math.random().toString(36).slice(2, 10).toUpperCase();
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
+// POST /api/rooms/create
 router.post("/create", requireAuth, validate(CreateRoomSchema), async (req: Request, res) => {
   try {
     const { mode, track, subject, difficulty, question_count } = req.body as z.infer<typeof CreateRoomSchema>;
@@ -34,82 +35,74 @@ router.post("/create", requireAuth, validate(CreateRoomSchema), async (req: Requ
     });
 
     // Strip answers before storing
-    const safeQuestions = questions.map(({ correct_option: _co, ...q }) => q);
+    const safeQuestions = questions.map(({ correct_option: _co, explanation: _ex, ...q }) => q);
 
+    // Generate a unique 6-character code
     let code = randomCode();
-    let attempts = 0;
-    while (attempts < 5) {
-      const existing = await queryOne(`SELECT id FROM multiplayer_rooms WHERE code = $1`, [code]);
-      if (!existing) break;
+    for (let i = 0; i < 5; i++) {
+      const exists = await MultiplayerRoom.exists({ code });
+      if (!exists) break;
       code = randomCode();
-      attempts++;
     }
 
-    const [room] = await query<{ id: string; code: string }>(
-      `INSERT INTO multiplayer_rooms (code, host_id, mode, track, subject, difficulty, max_players, questions)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, code`,
-      [code, req.user!.uid, mode, track, subject ?? null, difficulty, max, JSON.stringify(safeQuestions)]
-    );
+    const room = await MultiplayerRoom.create({
+      code,
+      host_id:     new mongoose.Types.ObjectId(req.user!.uid),
+      mode,
+      track,
+      subject:     subject ?? null,
+      difficulty,
+      max_players: max,
+      status:      "waiting",
+      questions:   safeQuestions,
+      players: [{
+        user_id:  new mongoose.Types.ObjectId(req.user!.uid),
+        username: req.user!.username,
+        score: 0, correct: 0, streak: 0,
+      }],
+    });
 
-    await query(
-      `INSERT INTO room_players (room_id, user_id) VALUES ($1, $2)`,
-      [room.id, req.user!.uid]
-    );
-
-    res.status(201).json(room);
+    res.status(201).json({ id: String(room._id), code: room.code });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create room" });
   }
 });
 
+// POST /api/rooms/join
 router.post("/join", requireAuth, async (req: Request, res) => {
   try {
     const { code } = req.body as { code: string };
-    const room = await queryOne<{ id: string; status: string; max_players: number }>(
-      `SELECT id, status, max_players FROM multiplayer_rooms WHERE code = $1`,
-      [code?.toUpperCase()]
-    );
+    const room = await MultiplayerRoom.findOne({ code: code?.toUpperCase().trim() });
     if (!room || room.status !== "waiting") {
       res.status(404).json({ error: "Room not found or already started" });
       return;
     }
-
-    const [count] = await query<{ count: string }>(
-      `SELECT COUNT(*) FROM room_players WHERE room_id = $1`,
-      [room.id]
-    );
-    if (parseInt(count.count) >= room.max_players) {
+    if (room.players.length >= room.max_players) {
       res.status(409).json({ error: "Room is full" });
       return;
     }
 
-    await query(
-      `INSERT INTO room_players (room_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-      [room.id, req.user!.uid]
-    );
-    res.json({ room_id: room.id });
+    const uid = new mongoose.Types.ObjectId(req.user!.uid);
+    const already = room.players.some((p) => p.user_id.toString() === req.user!.uid);
+    if (!already) {
+      room.players.push({ user_id: uid, username: req.user!.username, score: 0, correct: 0, streak: 0, joined_at: new Date() });
+      await room.save();
+    }
+
+    res.json({ room_id: String(room._id), code: room.code });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to join room" });
   }
 });
 
+// GET /api/rooms/:id
 router.get("/:id", requireAuth, async (req: Request, res) => {
   try {
-    const room = await queryOne(
-      `SELECT r.id, r.code, r.mode, r.track, r.subject, r.difficulty, r.status, r.max_players,
-              array_agg(json_build_object('uid', u.uid, 'username', u.username, 'level', u.level, 'avatar_url', u.avatar_url)) as players
-       FROM multiplayer_rooms r
-       JOIN room_players rp ON rp.room_id = r.id
-       JOIN users u ON u.uid = rp.user_id
-       WHERE r.id = $1
-       GROUP BY r.id`,
-      [req.params.id]
-    );
+    const room = await MultiplayerRoom.findById(req.params.id).lean();
     if (!room) { res.status(404).json({ error: "Room not found" }); return; }
-    res.json(room);
+    res.json({ ...room, id: String(room._id) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch room" });

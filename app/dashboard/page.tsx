@@ -1,7 +1,7 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useUserStore, getTotalBalance } from "@/lib/store/user-store";
 import { useGameStore } from "@/lib/store/game-store";
 import { XPBar } from "@/components/ui/XPBar";
@@ -14,6 +14,7 @@ import { NeonIcon, type IconColor } from "@/components/ui/NeonIcon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { LEVELS } from "@/lib/config/progression";
 import { TRACKS } from "@/lib/config/tracks";
+import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import * as Lucide from "lucide-react";
 
@@ -51,10 +52,16 @@ const SUBJECT_ICONS: Record<string, { emoji: string; color: string }> = {
 };
 
 function DailyMissionCard() {
-  const game = useGameStore();
-  const sessionsToday = 3; // In production: compute from store
-  const progress = Math.min(game.status === "finished" ? 1 : 0, 3);
-  const pct = Math.round((progress / 3) * 100);
+  const user = useUserStore();
+  const [progress, setProgress] = useState(0);
+  const TARGET = 3;
+
+  useEffect(() => {
+    if (!user.uid) return;
+    api.getMe().then((me) => setProgress(me.daily_goal?.progress ?? 0)).catch(() => {});
+  }, [user.uid]);
+
+  const pct = Math.round((progress / TARGET) * 100);
 
   return (
     <GlassCard className="p-0 overflow-hidden" hover={false}>
@@ -123,6 +130,92 @@ function StreakProtectionBadge({ streak }: { streak: number }) {
   );
 }
 
+function QuestCard() {
+  const user = useUserStore();
+  const [quests, setQuests] = useState<{ id: string; title: string; target: number; progress: number; status: string; reward_xp: number; reward_questions: number }[]>([]);
+  const [claiming, setClaiming] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user.uid) return;
+    api.getQuests().then(setQuests).catch(() => {});
+  }, [user.uid]);
+
+  const claim = async (id: string) => {
+    setClaiming(id);
+    try {
+      const res = await api.claimQuest(id);
+      user.addXP(res.reward_xp);
+      user.addQuestions(0, 0, res.reward_questions);
+      setQuests((q) => q.filter((x) => x.id !== id));
+    } catch { /* ignore */ }
+    finally { setClaiming(null); }
+  };
+
+  if (!user.uid || quests.length === 0) return null;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      <GlassCard className="p-4 space-y-3" hover={false}>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: "var(--text-muted)" }}>Daily Quests</p>
+        {quests.slice(0, 3).map((q) => {
+          const pct = Math.round((q.progress / q.target) * 100);
+          const done = q.status === "completed";
+          return (
+            <div key={q.id} className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-bold flex-1" style={{ color: done ? "var(--cyber-green)" : "var(--text-base)" }}>{q.title}</p>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>{q.progress}/{q.target}</span>
+                  {done && (
+                    <NeonButton variant="green" size="sm" onClick={() => claim(q.id)} disabled={claiming === q.id}>
+                      {claiming === q.id ? "…" : `+${q.reward_questions}q`}
+                    </NeonButton>
+                  )}
+                </div>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--cyber-border)" }}>
+                <motion.div className="h-full rounded-full"
+                  style={{ background: done ? "var(--cyber-green)" : "linear-gradient(90deg, var(--cyber-cyan), var(--cyber-purple))" }}
+                  initial={{ width: "0%" }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6 }} />
+              </div>
+            </div>
+          );
+        })}
+      </GlassCard>
+    </motion.div>
+  );
+}
+
+function ReferralBanner() {
+  const user = useUserStore();
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = () => {
+    const link = `${window.location.origin}/auth/sign-up?ref=${user.referral_code}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      <GlassCard className="p-4 flex items-center gap-4" hover={false}>
+        <div className="text-3xl">🎁</div>
+        <div className="flex-1">
+          <p className="text-xs font-black uppercase tracking-wider neon-text-green">Refer a Friend</p>
+          <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+            {user.uid ? `${user.referral_count} referred · ` : ""}Earn 20 free questions per referral
+          </p>
+        </div>
+        <NeonButton variant="green" size="sm" onClick={copyLink}>
+          {copied ? "Copied!" : "Share"}
+        </NeonButton>
+      </GlassCard>
+    </motion.div>
+  );
+}
+
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -135,6 +228,9 @@ function DashboardContent() {
 
   const handleAction = (id: string) => {
     if (id === "store") { router.push("/store"); return; }
+    if (id === "duel" || id === "battle_royale") {
+      router.push(`/lobby?mode=${id}&track=${track}`); return;
+    }
     router.push(`/quiz?mode=${id}&track=${track}`);
   };
 
@@ -307,23 +403,11 @@ function DashboardContent() {
           </div>
         </motion.div>
 
+        {/* Quests */}
+        <QuestCard />
+
         {/* Referral banner */}
-        <motion.div variants={itemVars}>
-          <GlassCard className="p-4 flex items-center gap-4" hover={false}>
-            <div className="text-3xl">🎁</div>
-            <div className="flex-1">
-              <p className="text-xs font-black uppercase tracking-wider neon-text-green">
-                Refer a Friend
-              </p>
-              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                Earn 20 free questions per referral
-              </p>
-            </div>
-            <NeonButton variant="green" size="sm">
-              Share
-            </NeonButton>
-          </GlassCard>
-        </motion.div>
+        <ReferralBanner />
 
       </motion.div>
     </div>

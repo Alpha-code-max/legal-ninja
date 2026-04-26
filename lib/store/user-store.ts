@@ -12,6 +12,7 @@ export interface UserState {
   longest_streak: number;
   badges: string[];
   country: string;
+  track: string;
   total_questions_answered: number;
   total_correct_answers: number;
   free_questions_remaining: number;
@@ -21,6 +22,7 @@ export interface UserState {
   weak_areas: string[];
   last_demotion_timestamp: number | null;
   referral_count: number;
+  referral_code: string;
   recent_answers: boolean[];
 }
 
@@ -39,6 +41,7 @@ interface UserActions {
   recordAnswer: (correct: boolean) => { levelChanged: boolean; direction: "up" | "down" | null };
   resetStreak: () => void;
   addBadge: (badge: string) => void;
+  addBadges: (badges: string[]) => void;
   setUser: (user: Partial<UserState>) => void;
 }
 
@@ -52,6 +55,7 @@ const DEFAULT_USER: UserState = {
   longest_streak: 0,
   badges: [],
   country: "NG",
+  track: "law_school_track",
   total_questions_answered: 0,
   total_correct_answers: 0,
   free_questions_remaining: 100,
@@ -61,6 +65,7 @@ const DEFAULT_USER: UserState = {
   weak_areas: [],
   last_demotion_timestamp: null,
   referral_count: 0,
+  referral_code: "",
   recent_answers: [],
 };
 
@@ -163,6 +168,11 @@ export const useUserStore = create<UserState & UserActions>()(
       addBadge: (badge) =>
         set((s) => ({
           badges: s.badges.includes(badge) ? s.badges : [...s.badges, badge],
+        })),
+
+      addBadges: (newBadges) =>
+        set((s) => ({
+          badges: [...new Set([...s.badges, ...newBadges])],
         })),
     }),
     { name: "legal-ninja-user" }

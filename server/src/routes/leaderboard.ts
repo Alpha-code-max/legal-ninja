@@ -1,7 +1,8 @@
 import { Router, type Request } from "express";
 import { requireAuth } from "../middleware/auth";
-import { query } from "../db/client";
-
+import { LeaderboardEntry } from "../models/LeaderboardEntry";
+import { User } from "../models/User";
+import mongoose from "mongoose";
 
 const router = Router();
 
@@ -24,38 +25,78 @@ router.get("/:type", requireAuth, async (req: Request, res) => {
     return;
   }
 
-  const subject = Array.isArray(req.query.subject) ? req.query.subject[0] : (req.query.subject as string | undefined);
-  const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
-  const limit = Math.min(parseInt(limitRaw as string) || 50, 100);
-  const periodStart = getPeriodStart(type);
+  const subject   = req.query.subject as string | undefined;
+  const limit     = Math.min(parseInt(req.query.limit as string) || 50, 100);
+  const periodStart = getPeriodStart(type === "country_based" ? "global_all_time" : type);
 
   try {
-    const entries = await query(
-      `SELECT
-         u.username, u.avatar_url, u.level, u.country,
-         le.rank, le.total_xp, le.win_rate, le.current_streak, le.total_questions_answered
-       FROM leaderboard_entries le
-       JOIN users u ON u.uid = le.user_id
-       WHERE le.leaderboard_type = $1
-         AND le.period_start = $2
-         ${subject ? "AND le.subject = $4" : ""}
-       ORDER BY le.rank ASC
-       LIMIT $3`,
-      subject ? [type, periodStart, limit, subject] : [type, periodStart, limit]
-    );
+    let entries: ReturnType<typeof formatEntry>[] = [];
 
-    // Find current user's rank
-    const myEntry = await query(
-      `SELECT rank, total_xp FROM leaderboard_entries
-       WHERE user_id = $1 AND leaderboard_type = $2 AND period_start = $3`,
-      [req.user!.uid, type, periodStart]
-    );
+    if (type === "country_based") {
+      // Filter by requesting user's country
+      const me = await User.findById(req.user!.uid, "country").lean();
+      const country = me?.country ?? "NG";
+      const raw = await LeaderboardEntry.aggregate([
+        { $match: { leaderboard_type: "global_all_time", period_start: "2024-01-01" } },
+        { $lookup: { from: "users", localField: "user_id", foreignField: "_id", as: "u" } },
+        { $unwind: "$u" },
+        { $match: { "u.country": country } },
+        { $sort: { total_xp: -1 } },
+        { $limit: limit },
+        { $project: { rank: 1, total_xp: 1, win_rate: 1, current_streak: 1, total_questions_answered: 1, "u.username": 1, "u.avatar_url": 1, "u.level": 1 } },
+      ]);
+      entries = raw.map((e) => ({
+        rank: e.rank,
+        total_xp: e.total_xp,
+        win_rate: e.win_rate,
+        current_streak: e.current_streak,
+        total_questions_answered: e.total_questions_answered,
+        username: e.u?.username ?? "Unknown",
+        avatar_url: e.u?.avatar_url ?? "",
+        level: e.u?.level ?? 1,
+      }));
+    } else {
+      const filter: Record<string, unknown> = { leaderboard_type: type, period_start: periodStart };
+      if (subject) filter.subject = subject;
 
-    res.json({ entries, my_rank: myEntry[0] ?? null });
+      const raw = await LeaderboardEntry.find(filter)
+        .sort({ rank: 1 })
+        .limit(limit)
+        .populate<{ user_id: { username: string; avatar_url: string; level: number } }>("user_id", "username avatar_url level")
+        .lean();
+
+      entries = raw.map(formatEntry);
+    }
+
+    // My own rank in this leaderboard
+    const myEntry = await LeaderboardEntry.findOne({
+      user_id: new mongoose.Types.ObjectId(req.user!.uid),
+      leaderboard_type: type === "country_based" ? "global_all_time" : type,
+      period_start: periodStart,
+    }).lean();
+
+    res.json({
+      entries,
+      my_rank: myEntry ? { rank: myEntry.rank, total_xp: myEntry.total_xp } : null,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch leaderboard" });
   }
 });
+
+function formatEntry(e: { rank: number | null; total_xp: number; win_rate: number; current_streak: number; total_questions_answered: number; user_id: { username: string; avatar_url: string; level: number } | mongoose.Types.ObjectId }) {
+  const user = e.user_id as { username: string; avatar_url: string; level: number } | null;
+  return {
+    rank: e.rank,
+    total_xp: e.total_xp,
+    win_rate: e.win_rate,
+    current_streak: e.current_streak,
+    total_questions_answered: e.total_questions_answered,
+    username: user && "username" in user ? user.username : "Unknown",
+    avatar_url: user && "avatar_url" in user ? user.avatar_url : "",
+    level: user && "level" in user ? user.level : 1,
+  };
+}
 
 export default router;

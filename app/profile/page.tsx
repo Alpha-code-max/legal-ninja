@@ -1,5 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api/client";
 import { motion } from "framer-motion";
 import { useUserStore } from "@/lib/store/user-store";
 import { XPBar } from "@/components/ui/XPBar";
@@ -67,6 +69,48 @@ function AvatarIllustration({ level }: { level: number }) {
 export default function ProfilePage() {
   const router = useRouter();
   const user = useUserStore();
+  const [editOpen,   setEditOpen]   = useState(false);
+  const [editName,   setEditName]   = useState(user.username ?? "");
+  const [editTrack,  setEditTrack]  = useState(user.track ?? "law_school_track");
+  const [saving,     setSaving]     = useState(false);
+  const [saveError,  setSaveError]  = useState("");
+
+  // Sync profile from server on mount
+  useEffect(() => {
+    if (!user.uid) return;
+    api.getMe().then((me) => {
+      user.setUser({
+        username:                me.username,
+        xp:                      me.xp,
+        level:                   me.level,
+        current_streak:          me.current_streak,
+        longest_streak:          me.longest_streak,
+        total_questions_answered: me.total_questions_answered,
+        total_correct_answers:   me.total_correct_answers,
+        free_questions_remaining: me.free_questions_remaining,
+        paid_questions_balance:  me.paid_questions_balance,
+        earned_questions_balance: me.earned_questions_balance,
+        badges:                  me.badges,
+        weak_areas:              me.weak_areas,
+        referral_count:          me.referral_count,
+        referral_code:           me.referral_code,
+        track:                   me.track,
+      });
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.uid]);
+
+  const saveProfile = async () => {
+    setSaving(true); setSaveError("");
+    try {
+      await api.updateMe({ username: editName.trim() || undefined, track: editTrack as "law_school_track" | "undergraduate_track" });
+      user.setUser({ username: editName.trim(), track: editTrack });
+      setEditOpen(false);
+    } catch (err) {
+      setSaveError(err instanceof Error && err.message.includes("taken") ? "Username already taken." : "Failed to save changes.");
+    } finally { setSaving(false); }
+  };
+
   const currentLevel = LEVELS.find((l) => l.level === user.level) ?? LEVELS[0];
   const nextLevel    = getNextLevel(user.level);
   const accuracy     = calcAccuracy(user.total_correct_answers, user.total_questions_answered);
@@ -84,13 +128,16 @@ export default function ProfilePage() {
       <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b h-16 flex items-center px-4"
            style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)" }}>
         <div className="max-w-2xl mx-auto w-full flex items-center justify-between">
-          <button onClick={() => router.back()}
-                  className="transition-colors text-sm font-bold"
-                  style={{ color: "var(--text-muted)" }}>
-            ← Back
-          </button>
+          <button onClick={() => router.back()} className="transition-colors text-sm font-bold" style={{ color: "var(--text-muted)" }}>← Back</button>
           <h1 className="text-xl font-black gradient-text">Profile</h1>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setEditName(user.username ?? ""); setEditTrack(user.track ?? "law_school_track"); setEditOpen(true); }}
+              className="text-xs px-3 py-1.5 rounded-lg border font-bold transition-all"
+              style={{ borderColor: "var(--cyber-cyan)", color: "var(--cyber-cyan)", background: "color-mix(in srgb, var(--cyber-cyan) 8%, transparent)" }}>
+              Edit
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
 
@@ -250,6 +297,44 @@ export default function ProfilePage() {
         </NeonButton>
 
       </div>
+
+      {/* Edit Profile Modal */}
+      {editOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center px-4"
+             style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+             onClick={(e) => { if (e.target === e.currentTarget) setEditOpen(false); }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="cyber-card p-6 w-full max-w-sm space-y-4">
+            <h2 className="text-lg font-black neon-text-cyan">Edit Profile</h2>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Username</label>
+              <input value={editName} onChange={(e) => setEditName(e.target.value)} maxLength={30}
+                className="w-full px-4 py-2.5 rounded-xl text-sm bg-transparent border focus:outline-none"
+                style={{ borderColor: "var(--cyber-border)", color: "var(--text-base)" }} />
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Track</label>
+              <select value={editTrack} onChange={(e) => setEditTrack(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm border focus:outline-none"
+                style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)", color: "var(--text-base)" }}>
+                <option value="law_school_track">Law School</option>
+                <option value="undergraduate_track">Undergraduate</option>
+              </select>
+            </div>
+
+            {saveError && <p className="text-xs" style={{ color: "var(--cyber-red)" }}>{saveError}</p>}
+
+            <div className="flex gap-3 pt-1">
+              <NeonButton variant="ghost" fullWidth onClick={() => setEditOpen(false)}>Cancel</NeonButton>
+              <NeonButton variant="cyan" fullWidth onClick={saveProfile} disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </NeonButton>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

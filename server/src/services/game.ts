@@ -102,6 +102,7 @@ export async function endGameSession(params: {
   percentage: number;
   xpEarned: number;
   newBadges: string[];
+  levelDirection: "up" | "down" | null;
 }> {
   const session = await GameSession.findOneAndUpdate(
     { _id: params.sessionId, user_id: new mongoose.Types.ObjectId(params.userId), status: "active" },
@@ -126,7 +127,31 @@ export async function endGameSession(params: {
   const newBadges = await checkAndAwardBadges(params.userId, { grade, streak: session.max_streak });
   updateLeaderboard(params.userId).catch(console.error);
 
-  return { grade, percentage, xpEarned: session.xp_earned + bonusXP, newBadges };
+  // Update battles_completed quest progress
+  await Quest.updateMany(
+    { user_id: new mongoose.Types.ObjectId(params.userId), quest_type: "battles_completed", status: "active" },
+    [{ $set: { progress: { $min: ["$target", { $add: ["$progress", 1] }] } } }],
+    { updatePipeline: true } as any
+  );
+  await Quest.updateMany(
+    { user_id: new mongoose.Types.ObjectId(params.userId), status: "active", $expr: { $gte: ["$progress", "$target"] } },
+    { $set: { status: "completed", completed_at: new Date() } }
+  );
+
+  // Compute level direction from latest user state
+  const updatedUser = await User.findById(params.userId, "level").lean();
+  const finalLevel = updatedUser?.level ?? 1;
+  const sessionDoc = await GameSession.findById(params.sessionId, "xp_earned").lean();
+  const levelDirection: "up" | "down" | null =
+    finalLevel > (session.xp_earned > 0 ? 1 : 1) ? null : null; // computed below
+  void levelDirection; // suppress unused warning — we derive it properly:
+
+  // Compute by comparing level before vs after session
+  const xpBeforeSession = (updatedUser ? (updatedUser as { xp?: number }).xp ?? 0 : 0) - (sessionDoc?.xp_earned ?? 0) - bonusXP;
+  const levelBefore = computeLevel(Math.max(0, xpBeforeSession), Math.max(0, (updatedUser as { total_questions_answered?: number } | null)?.total_questions_answered ?? 0));
+  const derivedDirection: "up" | "down" | null = finalLevel > levelBefore ? "up" : finalLevel < levelBefore ? "down" : null;
+
+  return { grade, percentage, xpEarned: session.xp_earned + bonusXP, newBadges, levelDirection: derivedDirection };
 }
 
 async function updateQuestProgress(userId: string, type: string, increment: number) {

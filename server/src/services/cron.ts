@@ -4,14 +4,22 @@ import { LeaderboardEntry } from "../models/LeaderboardEntry";
 import { XP_SOURCES } from "./progression";
 
 export function startCronJobs(): void {
-  // Daily login XP at midnight WAT (23:00 UTC)
+  // Daily reset at midnight WAT (23:00 UTC): award login XP + break missed streaks
   cron.schedule("0 23 * * *", async () => {
     console.log("[cron] Daily reset...");
     try {
       const yesterday = new Date(Date.now() - 86400000);
+      // Award daily login XP to users who logged in today
       await User.updateMany(
         { last_login_at: { $gte: yesterday } },
         { $inc: { xp: XP_SOURCES.daily_login } }
+      );
+      // Break streaks for users who didn't answer any question yesterday
+      // (last_login_at older than 48h AND current_streak > 0)
+      const twoDaysAgo = new Date(Date.now() - 2 * 86400000);
+      await User.updateMany(
+        { last_login_at: { $lt: twoDaysAgo }, current_streak: { $gt: 0 } },
+        { $set: { current_streak: 0 } }
       );
       console.log("[cron] Daily reset complete");
     } catch (err) {

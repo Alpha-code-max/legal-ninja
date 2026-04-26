@@ -51,6 +51,13 @@ export const GAME_MODES = {
     xp_multiplier: 1.2,
     icon: "🎯",
   },
+  daily_challenge: {
+    id: "daily_challenge",
+    name: "Daily Challenge",
+    description: "One attempt per day — timed and locked",
+    xp_multiplier: 1.5,
+    icon: "🎯",
+  },
 } as const;
 
 export type GameModeId = keyof typeof GAME_MODES;

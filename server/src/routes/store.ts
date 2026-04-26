@@ -3,8 +3,9 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { initPaystackPayment, verifyPaystackSignature, processPaystackWebhook } from "../services/payment";
-import { query, queryOne } from "../db/client";
-import type { DbUser } from "../types";
+import { User } from "../models/User";
+import { Transaction } from "../models/Transaction";
+import mongoose from "mongoose";
 import { v4 as uuid } from "uuid";
 
 const router = Router();
@@ -14,7 +15,7 @@ const BundleSchema = z.object({
 });
 
 const PassSchema = z.object({
-  pass_id: z.enum(["7_day_unlimited", "subject_mastery"]),
+  pass_id:    z.enum(["7_day_unlimited", "subject_mastery"]),
   subject_id: z.string().max(60).optional(),
 });
 
@@ -25,27 +26,30 @@ const BUNDLES = [
   { questions: 500, price_ngn: 4500 },
 ];
 
-const PASSES: Record<string, { price_ngn: number; name: string }> = {
-  "7_day_unlimited": { price_ngn: 700,  name: "7-Day Unlimited" },
-  "subject_mastery": { price_ngn: 800,  name: "Subject Mastery Pack" },
+const PASSES: Record<string, { price_ngn: number; name: string; days: number }> = {
+  "7_day_unlimited": { price_ngn: 700,  name: "7-Day Unlimited",     days: 7  },
+  "subject_mastery": { price_ngn: 800,  name: "Subject Mastery Pack", days: 30 },
 };
 
-// Initiate bundle purchase
+// POST /api/store/buy/bundle
 router.post("/buy/bundle", requireAuth, validate(BundleSchema), async (req: Request, res) => {
   try {
     const bundle = BUNDLES[req.body.bundle_index];
     if (!bundle) { res.status(400).json({ error: "Invalid bundle" }); return; }
 
-    const user = await queryOne<{ email: string }>(`SELECT email FROM users WHERE uid = $1`, [req.user!.uid]);
+    const user = await User.findById(req.user!.uid, "email").lean();
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
     const reference = `LN-${uuid().replace(/-/g, "").slice(0, 16).toUpperCase()}`;
 
-    await query(
-      `INSERT INTO transactions (user_id, reference, gateway, amount_ngn, questions_added, status)
-       VALUES ($1, $2, 'paystack', $3, $4, 'pending')`,
-      [req.user!.uid, reference, bundle.price_ngn, bundle.questions]
-    );
+    await Transaction.create({
+      user_id: new mongoose.Types.ObjectId(req.user!.uid),
+      reference,
+      gateway: "paystack",
+      amount_ngn: bundle.price_ngn,
+      questions_added: bundle.questions,
+      status: "pending",
+    });
 
     const result = await initPaystackPayment({
       userId: req.user!.uid,
@@ -62,22 +66,26 @@ router.post("/buy/bundle", requireAuth, validate(BundleSchema), async (req: Requ
   }
 });
 
-// Initiate pass purchase
+// POST /api/store/buy/pass
 router.post("/buy/pass", requireAuth, validate(PassSchema), async (req: Request, res) => {
   try {
     const pass = PASSES[req.body.pass_id];
     if (!pass) { res.status(400).json({ error: "Invalid pass" }); return; }
 
-    const user = await queryOne<{ email: string }>(`SELECT email FROM users WHERE uid = $1`, [req.user!.uid]);
+    const user = await User.findById(req.user!.uid, "email").lean();
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
     const reference = `LN-${uuid().replace(/-/g, "").slice(0, 16).toUpperCase()}`;
 
-    await query(
-      `INSERT INTO transactions (user_id, reference, gateway, amount_ngn, questions_added, pass_activated, status)
-       VALUES ($1, $2, 'paystack', $3, 0, $4, 'pending')`,
-      [req.user!.uid, reference, pass.price_ngn, req.body.pass_id]
-    );
+    await Transaction.create({
+      user_id: new mongoose.Types.ObjectId(req.user!.uid),
+      reference,
+      gateway: "paystack",
+      amount_ngn: pass.price_ngn,
+      questions_added: 0,
+      pass_activated: req.body.pass_id,
+      status: "pending",
+    });
 
     const result = await initPaystackPayment({
       userId: req.user!.uid,
@@ -95,7 +103,7 @@ router.post("/buy/pass", requireAuth, validate(PassSchema), async (req: Request,
   }
 });
 
-// Paystack webhook — raw body required for signature verification
+// POST /api/store/webhook/paystack — raw body required for signature verification
 router.post("/webhook/paystack", async (req, res) => {
   const signature = req.headers["x-paystack-signature"] as string;
   const rawBody = (req as Request & { rawBody?: string }).rawBody;
@@ -114,18 +122,32 @@ router.post("/webhook/paystack", async (req, res) => {
   }
 });
 
-// Transaction history
+// GET /api/store/transactions
 router.get("/transactions", requireAuth, async (req: Request, res) => {
   try {
-    const txns = await query(
-      `SELECT reference, gateway, amount_ngn, questions_added, pass_activated, status, created_at, completed_at
-       FROM transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20`,
-      [req.user!.uid]
-    );
-    res.json(txns);
+    const txns = await Transaction.find({ user_id: new mongoose.Types.ObjectId(req.user!.uid) })
+      .sort({ created_at: -1 })
+      .limit(20)
+      .lean();
+    res.json(txns.map((t) => ({ ...t, id: String(t._id) })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+});
+
+// GET /api/store/verify/:reference — frontend polls this after Paystack redirect
+router.get("/verify/:reference", requireAuth, async (req: Request, res) => {
+  try {
+    const txn = await Transaction.findOne({
+      reference: req.params.reference,
+      user_id: new mongoose.Types.ObjectId(req.user!.uid),
+    }).lean();
+    if (!txn) { res.status(404).json({ error: "Transaction not found" }); return; }
+    res.json({ status: txn.status, questions_added: txn.questions_added, pass_activated: txn.pass_activated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to verify transaction" });
   }
 });
 

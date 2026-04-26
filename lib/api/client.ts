@@ -51,8 +51,16 @@ export const api = {
     request<{ reset: boolean }>("/auth/reset-password", { method: "POST", body: JSON.stringify(body) }),
 
   // User
-  getMe: () => request<unknown>("/users/me"),
-  updateMe: (body: Record<string, unknown>) =>
+  getMe: () => request<{
+    id: string; username: string; email: string; avatar_url: string; country: string; track: string;
+    xp: number; level: number; current_streak: number; longest_streak: number;
+    total_questions_answered: number; total_correct_answers: number;
+    free_questions_remaining: number; paid_questions_balance: number; earned_questions_balance: number;
+    active_passes: { pass_type: string; pass_name: string; subject_id?: string; expires_at: string }[];
+    badges: string[]; weak_areas: string[]; referral_count: number; referral_code: string;
+    daily_goal: { progress: number; target: number; completed: boolean };
+  }>("/users/me"),
+  updateMe: (body: { username?: string; avatar_url?: string; country?: string; track?: string }) =>
     request<unknown>("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
   getBalance: () => request<{
     free_questions_remaining: number;
@@ -61,9 +69,11 @@ export const api = {
     total: number;
     active_passes: unknown[];
   }>("/users/balance"),
-  getQuests: () => request<unknown[]>("/users/quests"),
+  getQuests: () => request<{ id: string; title: string; target: number; progress: number; status: string; reward_xp: number; reward_questions: number; expires_at: string | null }[]>("/users/quests"),
   claimQuest: (id: string) =>
     request<{ claimed: boolean; reward_xp: number; reward_questions: number }>(`/users/quests/${id}/claim`, { method: "POST" }),
+  verifyTransaction: (reference: string) =>
+    request<{ status: string; questions_added: number; pass_activated: string | null }>(`/store/verify/${reference}`),
 
   // Questions
   nextQuestion: (body: { subject: string; track: string; difficulty: string; count?: number }) =>
@@ -93,7 +103,7 @@ export const api = {
       "/sessions/answer", { method: "POST", body: JSON.stringify(body) }
     ),
   endSession: (session_id: string) =>
-    request<{ grade: string; percentage: number; xpEarned: number; newBadges: string[] }>(
+    request<{ grade: string; percentage: number; xpEarned: number; newBadges: string[]; levelDirection: "up" | "down" | null }>(
       "/sessions/end", { method: "POST", body: JSON.stringify({ session_id }) }
     ),
   getSessionHistory: () => request<unknown[]>("/sessions/history"),
