@@ -1,0 +1,208 @@
+@import url("https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700&family=Space+Mono:wght@400;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Dark Theme (default) ─── */
+:root,
+[data-theme="dark"] {
+  --cyber-cyan:   #00f5ff;
+  --cyber-purple: #c026d3;
+  --cyber-green:  #22ff88;
+  --cyber-gold:   #ffd700;
+  --cyber-red:    #ff2d55;
+  --cyber-bg:     #050a0f;
+  --cyber-surface:#0d1b2a;
+  --cyber-card-bg:rgba(13, 27, 42, 0.75);
+  --cyber-border: rgba(26, 45, 66, 0.55);
+  --text-base:    #e2eaf0;
+  --text-muted:   rgba(226, 234, 240, 0.45);
+  --orb-a:        rgba(0, 245, 255, 0.12);
+  --orb-b:        rgba(192, 38, 211, 0.10);
+  --grid-line:    rgba(26, 45, 66, 0.12);
+
+  /* Icon glow filters — neon bloom on dark bg */
+  --icon-glow-cyan:   drop-shadow(0 0 7px rgba(0, 245, 255, 0.8));
+  --icon-glow-purple: drop-shadow(0 0 7px rgba(192, 38, 211, 0.8));
+  --icon-glow-green:  drop-shadow(0 0 7px rgba(34, 255, 136, 0.8));
+  --icon-glow-gold:   drop-shadow(0 0 7px rgba(255, 215, 0, 0.8));
+  --icon-glow-red:    drop-shadow(0 0 7px rgba(255, 45, 85, 0.8));
+
+  /* Button box shadows */
+  --btn-shadow-cyan:   0 0 18px rgba(0, 245, 255, 0.35);
+  --btn-shadow-purple: 0 0 18px rgba(192, 38, 211, 0.35);
+  --btn-shadow-green:  0 0 18px rgba(34, 255, 136, 0.35);
+  --btn-shadow-gold:   0 0 18px rgba(255, 215, 0, 0.35);
+  --btn-shadow-red:    0 0 18px rgba(255, 45, 85, 0.35);
+}
+
+/* ─── Light Theme ─── */
+[data-theme="light"] {
+  --cyber-cyan:   #0284c7;
+  --cyber-purple: #7c3aed;
+  --cyber-green:  #059669;
+  --cyber-gold:   #d97706;
+  --cyber-red:    #dc2626;
+  --cyber-bg:     #f0eeff;
+  --cyber-surface:#ffffff;
+  --cyber-card-bg:rgba(255, 255, 255, 0.88);
+  --cyber-border: rgba(124, 58, 237, 0.18);
+  --text-base:    #1e1b4b;
+  --text-muted:   rgba(30, 27, 75, 0.55);
+  --orb-a:        rgba(2, 132, 199, 0.12);
+  --orb-b:        rgba(124, 58, 237, 0.10);
+  --grid-line:    rgba(124, 58, 237, 0.06);
+
+  /* No neon bloom on light bg — icons rely on solid color alone */
+  --icon-glow-cyan:   none;
+  --icon-glow-purple: none;
+  --icon-glow-green:  none;
+  --icon-glow-gold:   none;
+  --icon-glow-red:    none;
+
+  /* Subtle directional shadow instead of bloom */
+  --btn-shadow-cyan:   0 2px 12px rgba(2, 132, 199, 0.28), inset 0 0 0 1px rgba(2, 132, 199, 0.25);
+  --btn-shadow-purple: 0 2px 12px rgba(124, 58, 237, 0.28), inset 0 0 0 1px rgba(124, 58, 237, 0.25);
+  --btn-shadow-green:  0 2px 12px rgba(5, 150, 105, 0.28),  inset 0 0 0 1px rgba(5, 150, 105, 0.25);
+  --btn-shadow-gold:   0 2px 12px rgba(217, 119, 6, 0.28),  inset 0 0 0 1px rgba(217, 119, 6, 0.25);
+  --btn-shadow-red:    0 2px 12px rgba(220, 38, 38, 0.28),   inset 0 0 0 1px rgba(220, 38, 38, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  background-color: var(--cyber-bg);
+  color: var(--text-base);
+  font-family: "Exo 2", sans-serif;
+  letter-spacing: -0.01em;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+@layer utilities {
+  .neon-text-cyan {
+    color: var(--cyber-cyan);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--cyber-cyan) 80%, transparent),
+                 0 0 20px color-mix(in srgb, var(--cyber-cyan) 40%, transparent);
+  }
+  .neon-text-purple {
+    color: var(--cyber-purple);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--cyber-purple) 80%, transparent),
+                 0 0 20px color-mix(in srgb, var(--cyber-purple) 40%, transparent);
+  }
+  .neon-text-green {
+    color: var(--cyber-green);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--cyber-green) 80%, transparent),
+                 0 0 20px color-mix(in srgb, var(--cyber-green) 40%, transparent);
+  }
+  .neon-text-gold {
+    color: var(--cyber-gold);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--cyber-gold) 80%, transparent),
+                 0 0 20px color-mix(in srgb, var(--cyber-gold) 40%, transparent);
+  }
+
+  .neon-border-cyan {
+    border-color: var(--cyber-cyan);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--cyber-cyan) 40%, transparent),
+                inset 0 0 4px color-mix(in srgb, var(--cyber-cyan) 10%, transparent);
+  }
+  .neon-border-purple {
+    border-color: var(--cyber-purple);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--cyber-purple) 40%, transparent),
+                inset 0 0 4px color-mix(in srgb, var(--cyber-purple) 10%, transparent);
+  }
+
+  /* Theme-aware glass card */
+  .glass-card {
+    background: var(--cyber-card-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--cyber-border);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
+  }
+
+  /* Theme-aware cyber card */
+  .cyber-card {
+    background: var(--cyber-card-bg);
+    border: 1px solid var(--cyber-border);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, var(--cyber-cyan), var(--cyber-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-xp {
+    background: linear-gradient(135deg, var(--cyber-green), var(--cyber-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Shimmer overlay */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.05),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.5s infinite linear;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* XP glow pulse */
+  .xp-pulse {
+    animation: xp-pulse 2s ease-in-out infinite;
+  }
+  @keyframes xp-pulse {
+    0%, 100% { box-shadow: 0 0 8px color-mix(in srgb, var(--cyber-green) 50%, transparent); }
+    50%       { box-shadow: 0 0 24px color-mix(in srgb, var(--cyber-green) 80%, transparent); }
+  }
+
+  /* Confetti particle */
+  .confetti-fall {
+    animation: confetti-fall 2s ease-in forwards;
+  }
+  @keyframes confetti-fall {
+    0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+}
+
+/* Grid background helper — uses CSS var so it themes */
+.cyber-grid {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Noise overlay */
+.bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+}
+
+/* Light mode noise slightly stronger */
+[data-theme="light"] .bg-noise { opacity: 0.02; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--cyber-bg); }
+::-webkit-scrollbar-thumb { background: var(--cyber-border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--cyber-cyan); }

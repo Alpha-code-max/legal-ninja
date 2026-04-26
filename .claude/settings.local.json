@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npm audit *)",
+      "Bash(npx tsc *)",
+      "Bash(sed -i 's/import type { AuthRequest } from \"..\\\\/types\";//g' src/routes/leaderboard.ts src/routes/questions.ts src/routes/rooms.ts)",
+      "Bash(sed -i 's/: AuthRequest/: Request/g' src/routes/leaderboard.ts src/routes/questions.ts src/routes/rooms.ts src/routes/sessions.ts src/routes/users.ts src/routes/store.ts)",
+      "Bash(sed -i 's/import type { AuthRequest, DbGameSession } from \"..\\\\/types\"/import type { DbGameSession } from \"..\\\\/types\"/g' src/routes/sessions.ts)",
+      "Bash(sed -i 's/import type { AuthRequest, DbUser } from \"..\\\\/types\"/import type { DbUser } from \"..\\\\/types\"/g' src/routes/store.ts src/routes/users.ts)",
+      "Bash(npm uninstall *)",
+      "Bash(npx next *)",
+      "Bash(grep -E \"\\(^[^/]*\\\\.[a-z]+$|app/|components/|lib/|server/src/\\)\")",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":4000\")",
+      "Bash(timeout 8 npx tsx src/index.ts)",
+      "Bash(curl *)",
+      "Bash(findstr \":3000\")",
+      "Bash(findstr \"LISTENING\")",
+      "Bash(node *)",
+      "Bash(taskkill *)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell(netstat *)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:3000/admin\" -UseBasicParsing | Select-Object -ExpandProperty StatusCode)",
+      "PowerShell($response = Invoke-WebRequest -Uri \"http://localhost:3000/admin\" -UseBasicParsing; if \\($response.Content -match \"Generate Questions\"\\) { \"✅ Generate Questions button IS in the page\" } else { \"❌ Generate Questions button NOT found in page\" }; if \\($response.Content -match \"overflow-y-auto\"\\) { \"❌ overflow-y-auto still present\" } else { \"✅ overflow-y-auto removed\" })",
+      "PowerShell(Start-Sleep -Seconds 12; $r = try { Invoke-WebRequest -Uri \"http://localhost:3000/admin\" -UseBasicParsing -TimeoutSec 10 } catch { $null }; if \\($r -and $r.Content -match \"Generate Questions\"\\) { \"✅ New admin page is live\" } elseif \\($r\\) { \"⚠️ Page loads but still old — still compiling\" } else { \"⏳ Server not ready yet — give it 10 more seconds\" })",
+      "PowerShell($r = Invoke-WebRequest -Uri \"http://localhost:3000/admin\" -UseBasicParsing; if \\($r.Content -match \"Generate Questions\"\\) { \"✅ Generate Questions button present\" } else { \"❌ Missing\" }; if \\($r.Content -match \"overflow-y-auto\"\\) { \"❌ overflow-y-auto still in layout\" } else { \"✅ Scroll fix applied\" })",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git push *)"
+    ]
+  }
+}
