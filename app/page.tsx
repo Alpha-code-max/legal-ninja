@@ -303,6 +303,24 @@ export default function SplashPage() {
         )}
       </motion.div>
 
+      {/* Get the App link */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2 }}
+        className="mt-8 text-center"
+      >
+        <button
+          onClick={() => router.push("/download")}
+          className="flex items-center gap-2 mx-auto text-xs font-bold uppercase tracking-widest transition-colors hover:opacity-100 opacity-50"
+          style={{ color: "var(--cyber-cyan)" }}
+        >
+          <span>📱</span>
+          Get the Mobile App
+          <span>→</span>
+        </button>
+      </motion.div>
+
       {/* HUD corners */}
       <div className="fixed top-6 left-6 w-10 h-10 border-t-2 border-l-2 border-cyber-cyan/20 pointer-events-none" />
       <div className="fixed top-6 right-16 w-10 h-10 border-t-2 border-r-2 border-cyber-cyan/20 pointer-events-none" />
