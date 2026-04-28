@@ -21,7 +21,7 @@ const AnswerSchema = z.object({
   session_id:     z.string().min(1),
   question_id:    z.string().min(1),
   selected:       z.enum(["A", "B", "C", "D"]),
-  correct_option: z.enum(["A", "B", "C", "D"]),
+  correct_option: z.enum(["A", "B", "C", "D"]).optional(),
   time_taken_ms:  z.number().int().min(0).max(600000),
   streak:         z.number().int().min(0),
 });
@@ -47,12 +47,16 @@ router.post("/start", requireAuth, validate(StartSchema), async (req: Request, r
 
 router.post("/answer", requireAuth, validate(AnswerSchema), async (req: Request, res) => {
   try {
+    // Resolve canonical correct option server-side to avoid trusting the client
+    const questionDoc = await (await import("../models/Question")).Question.findById(req.body.question_id).select("correct_option");
+    if (!questionDoc) { res.status(404).json({ error: "Question not found" }); return; }
+    const canonical = questionDoc.correct_option;
     const result = await submitAnswer({
       sessionId:     req.body.session_id,
       userId:        req.user!.uid,
       questionId:    req.body.question_id,
       selected:      req.body.selected,
-      correctOption: req.body.correct_option,
+      correctOption: canonical,
       timeTakenMs:   req.body.time_taken_ms,
       streak:        req.body.streak,
     });

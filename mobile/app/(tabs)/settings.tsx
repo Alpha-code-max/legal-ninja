@@ -1,10 +1,11 @@
 import { FadeIn } from '@components/ui/FadeIn';
-import { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Linking, Modal } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Linking, Modal, Alert } from "react-native";
 import { router } from "expo-router";
 import { CyberCard } from "@components/ui/CyberCard";
 import { NeonButton } from "@components/ui/NeonButton";
 import { useTheme } from "@context/ThemeContext";
+import { api } from "@lib/api";
 import type { ThemeId } from "@lib/theme";
 
 const MISSION = `Legal Ninja was born from a simple frustration: Nigerian law students preparing for the Bar exams had no engaging, mobile-first way to test their knowledge.
@@ -78,6 +79,13 @@ export default function Settings() {
   const [faqOpen,      setFaqOpen]      = useState<number | null>(null);
   const [missionOpen,  setMissionOpen]  = useState(false);
   const [creditsOpen,  setCreditsOpen]  = useState(false);
+  const [userRole,     setUserRole]     = useState<string>("law_student");
+  const [roleLoading,  setRoleLoading]  = useState(false);
+
+  // Fetch user role on mount
+  useEffect(() => {
+    api.getMe().then((me) => setUserRole(me.role ?? "law_student")).catch(() => {});
+  }, []);
 
   const modalBg   = colors.bgAlt;
   const modalBorder = `${colors.border}`;
@@ -96,6 +104,54 @@ export default function Settings() {
           <CyberCard style={{ padding: 0 }}>
             <Row icon="🥷" label="My Profile"   onPress={() => router.push("/(tabs)/profile")} />
             <Row icon="✏️" label="Edit Profile"  onPress={() => router.push("/(tabs)/profile")} last />
+          </CyberCard>
+
+          {/* STUDENT TYPE */}
+          <SectionLabel label="Student Type" />
+          <CyberCard style={{ padding: 16 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Your Role</Text>
+            <Text style={{ color: colors.textFaint, fontSize: 11, fontFamily: "SpaceGrotesk_400Regular", marginBottom: 14, lineHeight: 16 }}>
+              Bar students see only bar exam subjects. Law students see all subjects.
+            </Text>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {[
+                { id: "law_student", label: "📖 Law Student", color: "#22FF88" },
+                { id: "bar_student", label: "🎓 Bar Student", color: "#FFD700" },
+              ].map((r) => {
+                const active = userRole === r.id;
+                return (
+                  <TouchableOpacity key={r.id}
+                    onPress={async () => {
+                      if (active || roleLoading) return;
+                      setRoleLoading(true);
+                      try {
+                        await api.updateMe({ role: r.id });
+                        setUserRole(r.id);
+                        Alert.alert("Updated", `Your role has been changed to ${r.label.replace(/[📖🎓] ?/, "")}.`);
+                      } catch {
+                        Alert.alert("Error", "Failed to update role. Try again.");
+                      } finally {
+                        setRoleLoading(false);
+                      }
+                    }}
+                    activeOpacity={active ? 1 : 0.8}
+                    style={{
+                      flex: 1, borderRadius: 14, borderWidth: 2,
+                      borderColor: active ? r.color : colors.border,
+                      padding: 14, alignItems: "center", gap: 4,
+                      backgroundColor: active ? `${r.color}10` : "transparent",
+                      opacity: roleLoading && !active ? 0.5 : 1,
+                    }}>
+                    <Text style={{ color: active ? r.color : colors.textMuted, fontSize: 13, fontFamily: "SpaceGrotesk_700Bold" }}>{r.label}</Text>
+                    <View style={{ backgroundColor: active ? r.color : colors.border, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
+                      <Text style={{ color: active ? colors.bg : colors.textMuted, fontSize: 8, fontFamily: "SpaceGrotesk_700Bold" }}>
+                        {active ? "ACTIVE" : "TAP"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </CyberCard>
 
           {/* APPEARANCE */}

@@ -51,11 +51,45 @@ export async function getOrGenerateQuestions(params: {
   difficulty: string;
   count: number;
   userId?: string;
+  source?: "past" | "ai" | "mixed";
+  year?: number;
 }): Promise<IQuestion[]> {
-  const { subject, track, difficulty, count, userId } = params;
+  const { subject, track, difficulty, count, userId, source, year } = params;
 
   const seenIds = userId ? await getSeenIds(userId) : [];
   const seenFilter = seenIds.length > 0 ? { _id: { $nin: seenIds } } : {};
+
+  // Determine role for filtering (defaults to law_student)
+  let role = "law_student";
+  if (userId) {
+    const u = await User.findById(userId).select("role").lean();
+    if (u && (u as any).role) role = (u as any).role;
+  }
+
+  const allowedRolesClause = {
+    $or: [
+      { allowed_roles: { $exists: false } }, // backwards compatibility
+      { allowed_roles: { $in: ["all", role] } },
+    ],
+  };
+
+  // Build source filter based on requested source type
+  const sourceFilter: Record<string, unknown> = {};
+  if (source === "past") {
+    sourceFilter.source = { $in: ["past", "bank"] };
+  } else if (source === "ai") {
+    sourceFilter.source = "ai";
+  }
+  // "mixed" or undefined → no source filter (both pools)
+
+  // Build year filter if specified
+  const yearFilter: Record<string, unknown> = {};
+  if (year) {
+    yearFilter.year = year;
+  }
+
+  // approved: { $ne: false } matches true AND undefined (backwards-compatible)
+  const approvedClause = { approved: { $ne: false } };
 
   // ── GENERAL MODE: pull from any subject in the track ─────────────────────
   if (isGeneralMode(subject)) {
@@ -67,7 +101,11 @@ export async function getOrGenerateQuestions(params: {
           subject: { $in: subjects },
           difficulty,
           used_count: { $lt: REUSE_THRESHOLD },
+          ...approvedClause,
           ...seenFilter,
+          ...allowedRolesClause,
+          ...sourceFilter,
+          ...yearFilter,
         },
       },
       { $sample: { size: count } },
@@ -85,7 +123,11 @@ export async function getOrGenerateQuestions(params: {
           track, // enforce track so constitutional_law doesn't bleed across tracks
           ...(matchDifficulty ? { difficulty } : {}),
           used_count: { $lt: REUSE_THRESHOLD },
+          ...approvedClause,
           ...seenFilter,
+          ...allowedRolesClause,
+          ...sourceFilter,
+          ...yearFilter,
         },
       },
       { $sample: { size: count * 3 } },

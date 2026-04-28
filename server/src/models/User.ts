@@ -7,6 +7,7 @@ export interface IUser extends Document {
   avatar_url: string;
   country: string;
   track: string;
+  role?: "law_student" | "bar_student" | "admin";
   xp: number;
   level: number;
   current_streak: number;
@@ -47,6 +48,7 @@ const UserSchema = new Schema<IUser>(
     avatar_url:                { type: String, default: "" },
     country:                   { type: String, default: "NG", maxlength: 2 },
     track:                     { type: String, default: "law_school_track" },
+    role:                      { type: String, enum: ["law_student","bar_student","admin"], default: "law_student" },
     xp:                        { type: Number, default: 0 },
     level:                     { type: Number, default: 1 },
     current_streak:            { type: Number, default: 0 },

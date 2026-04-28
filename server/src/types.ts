@@ -3,6 +3,7 @@ export interface AuthUser {
   username: string;
   email: string;
   level: number;
+  role?: "law_student" | "bar_student" | "admin";
 }
 
 // Augment Express so req.user is AuthUser everywhere — no custom AuthRequest needed

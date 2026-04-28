@@ -32,8 +32,8 @@ async function request<T>(
 
 export const api = {
   // Auth
-  register: (body: { username: string; email: string; password: string; track: string; referral_code?: string }) =>
-    request<{ token: string; user: unknown; email_verification_sent: boolean }>("/auth/register", { method: "POST", body: JSON.stringify(body) }),
+  register: (body: { username: string; email: string; password: string; track: string; role?: string; referral_code?: string }) =>
+    request<{ token: string; user: unknown; email_verification_sent: boolean }>("/auth/register", { method: "POST", body: JSON.stringify({ role: "law_student", ...body }) }),
 
   login: (body: { email: string; password: string }) =>
     request<{ token: string; user: unknown }>("/auth/login", { method: "POST", body: JSON.stringify(body) }),
@@ -52,7 +52,7 @@ export const api = {
 
   // User
   getMe: () => request<{
-    id: string; username: string; email: string; avatar_url: string; country: string; track: string;
+    id: string; username: string; email: string; avatar_url: string; country: string; track: string; role?: string;
     xp: number; level: number; current_streak: number; longest_streak: number;
     total_questions_answered: number; total_correct_answers: number;
     free_questions_remaining: number; paid_questions_balance: number; earned_questions_balance: number;
@@ -60,7 +60,7 @@ export const api = {
     badges: string[]; weak_areas: string[]; referral_count: number; referral_code: string;
     daily_goal: { progress: number; target: number; completed: boolean };
   }>("/users/me"),
-  updateMe: (body: { username?: string; avatar_url?: string; country?: string; track?: string }) =>
+  updateMe: (body: { username?: string; avatar_url?: string; country?: string; track?: string; role?: string }) =>
     request<unknown>("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
   getBalance: () => request<{
     free_questions_remaining: number;
@@ -76,10 +76,10 @@ export const api = {
     request<{ status: string; questions_added: number; pass_activated: string | null }>(`/store/verify/${reference}`),
 
   // Questions
-  nextQuestion: (body: { subject: string; track: string; difficulty: string; count?: number }) =>
+  nextQuestion: (body: { subject: string; track: string; difficulty: string; count?: number; source?: string; year?: number }) =>
     request<{ question: unknown }>("/questions/next", { method: "POST", body: JSON.stringify(body) }),
 
-  guestNextQuestion: (body: { subject: string; track: string; difficulty: string }) =>
+  guestNextQuestion: (body: { subject: string; track: string; difficulty: string; source?: string; year?: number }) =>
     request<{ question: unknown }>("/questions/guest-next", { method: "POST", body: JSON.stringify(body) }),
   revealAnswer: (question_id: string) =>
     request<{ correct_option: string; explanation: string | null }>("/questions/reveal", {

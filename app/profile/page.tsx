@@ -72,6 +72,7 @@ export default function ProfilePage() {
   const [editOpen,   setEditOpen]   = useState(false);
   const [editName,   setEditName]   = useState(user.username ?? "");
   const [editTrack,  setEditTrack]  = useState(user.track ?? "law_school_track");
+  const [editRole,   setEditRole]   = useState(user.role ?? "law_student");
   const [saving,     setSaving]     = useState(false);
   const [saveError,  setSaveError]  = useState("");
 
@@ -95,6 +96,7 @@ export default function ProfilePage() {
         referral_count:          me.referral_count,
         referral_code:           me.referral_code,
         track:                   me.track,
+        role:                    me.role ?? "law_student",
       });
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,8 +105,8 @@ export default function ProfilePage() {
   const saveProfile = async () => {
     setSaving(true); setSaveError("");
     try {
-      await api.updateMe({ username: editName.trim() || undefined, track: editTrack as "law_school_track" | "undergraduate_track" });
-      user.setUser({ username: editName.trim(), track: editTrack });
+      await api.updateMe({ username: editName.trim() || undefined, track: editTrack as "law_school_track" | "undergraduate_track", role: editRole });
+      user.setUser({ username: editName.trim(), track: editTrack, role: editRole });
       setEditOpen(false);
     } catch (err) {
       setSaveError(err instanceof Error && err.message.includes("taken") ? "Username already taken." : "Failed to save changes.");
@@ -131,7 +133,7 @@ export default function ProfilePage() {
           <button onClick={() => router.back()} className="transition-colors text-sm font-bold" style={{ color: "var(--text-muted)" }}>← Back</button>
           <h1 className="text-xl font-black gradient-text">Profile</h1>
           <div className="flex items-center gap-2">
-            <button onClick={() => { setEditName(user.username ?? ""); setEditTrack(user.track ?? "law_school_track"); setEditOpen(true); }}
+            <button onClick={() => { setEditName(user.username ?? ""); setEditTrack(user.track ?? "law_school_track"); setEditRole(user.role ?? "law_student"); setEditOpen(true); }}
               className="text-xs px-3 py-1.5 rounded-lg border font-bold transition-all"
               style={{ borderColor: "var(--cyber-cyan)", color: "var(--cyber-cyan)", background: "color-mix(in srgb, var(--cyber-cyan) 8%, transparent)" }}>
               Edit
@@ -321,6 +323,16 @@ export default function ProfilePage() {
                 style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)", color: "var(--text-base)" }}>
                 <option value="law_school_track">Law School</option>
                 <option value="undergraduate_track">Undergraduate</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Student Type</label>
+              <select value={editRole} onChange={(e) => setEditRole(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm border focus:outline-none"
+                style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)", color: "var(--text-base)" }}>
+                <option value="law_student">📖 Law Student — All subjects</option>
+                <option value="bar_student">🎓 Bar Student — Bar exam subjects only</option>
               </select>
             </div>
 

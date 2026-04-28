@@ -5,6 +5,8 @@ import { validate } from "../middleware/validate";
 import { getOrGenerateQuestions, checkAndDeductQuestion } from "../services/question";
 import { generateExplanation } from "../services/ai";
 import { Question } from "../models/Question";
+import { User } from "../models/User";
+import { isSubjectAllowed } from "../config/subjects";
 
 const router = Router();
 
@@ -13,6 +15,8 @@ const GenerateSchema = z.object({
   track:      z.enum(["law_school_track", "undergraduate_track"]),
   difficulty: z.enum(["easy", "medium", "hard", "expert"]),
   count:      z.number().int().min(1).max(20).default(10),
+  source:     z.enum(["past", "ai", "mixed"]).default("mixed"),
+  year:       z.number().int().min(1990).max(2030).optional(),
 });
 
 const ExplanationSchema = z.object({
@@ -30,6 +34,8 @@ router.post("/guest-next", validate(GenerateSchema), async (req: Request, res) =
       track:      req.body.track,
       difficulty: req.body.difficulty,
       count:      1,
+      source:     req.body.source ?? "mixed",
+      year:       req.body.year,
     });
     if (questions.length === 0) {
       res.status(503).json({ error: "BANK_EMPTY" });
@@ -48,6 +54,15 @@ router.post("/guest-next", validate(GenerateSchema), async (req: Request, res) =
 
 router.post("/next", requireAuth, validate(GenerateSchema), async (req: Request, res) => {
   try {
+    // Server-side subject validation based on user role
+    const subj = req.body.subject as string;
+    const user = await User.findById(req.user!.uid).select("role").lean();
+    const role = (user as any)?.role ?? "law_student";
+    if (subj !== "mixed" && !isSubjectAllowed(subj, role)) {
+      res.status(403).json({ error: "SUBJECT_NOT_ALLOWED" });
+      return;
+    }
+
     await checkAndDeductQuestion(req.user!.uid);
 
     const questions = await getOrGenerateQuestions({
@@ -56,6 +71,8 @@ router.post("/next", requireAuth, validate(GenerateSchema), async (req: Request,
       difficulty: req.body.difficulty,
       count:      1,
       userId:     req.user!.uid,
+      source:     req.body.source ?? "mixed",
+      year:       req.body.year,
     });
 
     if (questions.length === 0) {
@@ -111,6 +128,25 @@ router.post("/explain", requireAuth, validate(ExplanationSchema), async (req: Re
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to generate explanation" });
+  }
+});
+
+// ─── Get available years for past questions (public) ──────────────────────────
+router.get("/years", async (req: Request, res) => {
+  try {
+    const subject = req.query.subject as string | undefined;
+    const match: Record<string, unknown> = {
+      source: { $in: ["past", "bank"] },
+      year: { $ne: null, $exists: true },
+    };
+    if (subject && subject !== "mixed" && subject !== "all") {
+      match.subject = subject;
+    }
+    const years = await Question.distinct("year", match);
+    res.json({ years: years.filter(Boolean).sort((a: number, b: number) => b - a) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to get years" });
   }
 });
 

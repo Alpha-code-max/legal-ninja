@@ -5,7 +5,7 @@ import { router } from "expo-router";
 import * as LocalAuthentication from "expo-local-authentication";
 import { NeonButton } from "@components/ui/NeonButton";
 import { api } from "@lib/api";
-import { setToken, setGuest, storage } from "@lib/storage";
+import { setToken, setGuest, clearGuest, storage } from "@lib/storage";
 import { useTheme } from "@context/ThemeContext";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,6 +29,7 @@ export default function SignIn() {
     try {
       const res = await api.login(trimmedEmail, password);
       await setToken(res.token);
+      await clearGuest();
       router.replace("/(tabs)");
     } catch (e: any) {
       setError(e.message ?? "Login failed. Check your credentials.");

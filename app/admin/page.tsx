@@ -30,7 +30,7 @@ export default function AdminPage() {
   const [stats,  setStats]  = useState<AdminStats | null>(null);
   const [pdfs,   setPdfs]   = useState<PdfDocument[]>([]);
   const [banks,  setBanks]  = useState<BankStat[]>([]);
-  const [tab,    setTab]    = useState<"upload" | "pdfs" | "banks" | "stats">("upload");
+  const [tab,    setTab]    = useState<"upload" | "past" | "pdfs" | "banks" | "stats">("upload");
 
   const [selectedFile,    setSelectedFile]    = useState<File | null>(null);
   const [selectedSubject, setSelectedSubject] = useState(SUBJECTS[0].id);
@@ -46,6 +46,15 @@ export default function AdminPage() {
   const setMsg = (id: string, msg: string) => setSubjectMsg((m) => ({ ...m, [id]: msg }));
   const clearMsg = (id: string, delay = 7000) =>
     setTimeout(() => setSubjectMsg((m) => ({ ...m, [id]: "" })), delay);
+
+  // Past Questions import state
+  const [pastJson,     setPastJson]     = useState("");
+  const [pastSubject,  setPastSubject]  = useState(SUBJECTS[0].id);
+  const [pastYear,     setPastYear]     = useState(new Date().getFullYear());
+  const [pastTrack,    setPastTrack]    = useState("law_school_track");
+  const [pastDiff,     setPastDiff]     = useState("medium");
+  const [importing,    setImporting]    = useState(false);
+  const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   const handleLogin = async () => {
     setAuthError("");
@@ -193,7 +202,7 @@ export default function AdminPage() {
       {/* Sticky tab bar */}
       <div className="sticky top-[57px] z-30 flex gap-2 px-4 py-3 overflow-x-auto border-b"
            style={{ background: "var(--cyber-card-bg)", backdropFilter: "blur(16px)", borderColor: "var(--cyber-border)" }}>
-        {(["upload", "banks", "pdfs", "stats"] as const).map((t) => (
+        {(["upload", "past", "banks", "pdfs", "stats"] as const).map((t) => (
           <button
             key={t}
             onClick={() => { setTab(t); if (t === "banks") refreshBanks(); }}
@@ -206,6 +215,7 @@ export default function AdminPage() {
             style={{ color: tab === t ? "var(--cyber-cyan)" : "var(--text-muted)" }}
           >
             {t === "upload" ? "📤 Upload PDF"
+              : t === "past"  ? "📝 Past Questions"
               : t === "banks" ? "🏦 Question Banks"
               : t === "pdfs"  ? "📚 Manage PDFs"
               : "📊 Stats"}
@@ -295,6 +305,122 @@ export default function AdminPage() {
                 {uploading ? "Processing PDF…" : "📤 Upload & Generate Questions"}
               </NeonButton>
               {uploading && <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>Parsing PDF. Large files may take 30–60 seconds…</p>}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── PAST QUESTIONS IMPORT ── */}
+        {tab === "past" && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+            <div className="cyber-card p-6 space-y-5">
+              <div>
+                <h2 className="font-black text-sm uppercase tracking-widest" style={{ color: "var(--cyber-gold)" }}>Import Past Exam Questions</h2>
+                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                  Paste a JSON array of questions below. Each question should have: <code>question</code>, <code>options</code> (A/B/C/D), <code>correct_option</code>. Optional: <code>explanation</code>, <code>topic</code>.
+                </p>
+              </div>
+
+              {/* Subject + Year + Track + Difficulty */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Subject</label>
+                  <select value={pastSubject} onChange={(e) => setPastSubject(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none"
+                    style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)", color: "var(--text-base)" }}>
+                    {SUBJECTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Exam Year</label>
+                  <input type="number" value={pastYear} onChange={(e) => setPastYear(Number(e.target.value))}
+                    min={1990} max={2030}
+                    className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none"
+                    style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)", color: "var(--text-base)" }} />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Track</label>
+                  <select value={pastTrack} onChange={(e) => setPastTrack(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none"
+                    style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)", color: "var(--text-base)" }}>
+                    <option value="law_school_track">Law School</option>
+                    <option value="undergraduate_track">Undergraduate</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Difficulty</label>
+                  <select value={pastDiff} onChange={(e) => setPastDiff(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none"
+                    style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)", color: "var(--text-base)" }}>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                    <option value="expert">Expert</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* JSON input */}
+              <div>
+                <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Questions JSON Array</label>
+                <textarea
+                  value={pastJson}
+                  onChange={(e) => setPastJson(e.target.value)}
+                  rows={12}
+                  placeholder={`[\n  {\n    "question": "What is the doctrine of lis pendens?",\n    "options": {\n      "A": "A rule of evidence",\n      "B": "A doctrine affecting pending litigation",\n      "C": "A type of legal brief",\n      "D": "A court procedure"\n    },\n    "correct_option": "B",\n    "explanation": "Lis pendens means a pending suit...",\n    "topic": "Property transfers"\n  }\n]`}
+                  className="w-full px-4 py-3 rounded-xl text-xs border font-mono focus:outline-none"
+                  style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)", color: "var(--text-base)", resize: "vertical" }}
+                />
+              </div>
+
+              <AnimatePresence>
+                {importResult && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    className="text-xs p-3 rounded-lg border font-mono"
+                    style={{
+                      color: importResult.ok ? "var(--cyber-green)" : "var(--cyber-red)",
+                      borderColor: importResult.ok ? "color-mix(in srgb, var(--cyber-green) 25%, transparent)" : "color-mix(in srgb, var(--cyber-red) 25%, transparent)",
+                      background: importResult.ok ? "color-mix(in srgb, var(--cyber-green) 8%, transparent)" : "color-mix(in srgb, var(--cyber-red) 8%, transparent)",
+                    }}
+                  >
+                    {importResult.message}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+
+              <NeonButton variant="gold" fullWidth size="lg" disabled={!pastJson.trim() || importing}
+                onClick={async () => {
+                  setImporting(true);
+                  setImportResult(null);
+                  try {
+                    const parsed = JSON.parse(pastJson);
+                    if (!Array.isArray(parsed)) throw new Error("Input must be a JSON array");
+                    const enriched = parsed.map((q: Record<string, unknown>) => ({
+                      ...q,
+                      subject: pastSubject,
+                      track: pastTrack,
+                      difficulty: pastDiff,
+                      year: pastYear,
+                    }));
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/admin/import-past-questions`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+                      body: JSON.stringify({ questions: enriched, year: pastYear }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Import failed");
+                    setImportResult({ ok: true, message: `✅ Imported ${data.imported} past exam questions (${pastYear})` });
+                    setPastJson("");
+                    refreshBanks();
+                  } catch (err) {
+                    setImportResult({ ok: false, message: err instanceof Error ? err.message : "Import failed" });
+                  } finally {
+                    setImporting(false);
+                  }
+                }}
+              >
+                {importing ? "Importing…" : `📝 Import ${pastYear} Past Questions`}
+              </NeonButton>
             </div>
           </motion.div>
         )}

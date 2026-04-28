@@ -10,6 +10,7 @@ import {
   populateQuestionBankFromPdf,
   getQuestionBankStats,
 } from "../services/pdf";
+import { generateQuestion, questionPassesStrictCheck } from "../services/ai";
 import { PdfChunk } from "../models/PdfChunk";
 import { User } from "../models/User";
 import { GameSession } from "../models/GameSession";
@@ -285,6 +286,183 @@ router.get("/stats", requireAdmin, async (_req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
+// Admin: approve or create questions (small endpoints to support admin workflows)
+
+// POST /api/admin/questions — create or import a single question
+router.post("/questions", requireAdmin, async (req: Request, res) => {
+  try {
+    const body = req.body as any;
+    const q = await Question.create({
+      subject: body.subject,
+      track: body.track,
+      difficulty: body.difficulty,
+      question: body.question,
+      options: body.options,
+      correct_option: body.correct_option,
+      explanation: body.explanation ?? null,
+      topic: body.topic ?? null,
+      source: body.source ?? "past",
+      allowed_roles: body.allowed_roles ?? undefined,
+      approved: body.approved ?? true,
+      validated: body.validated ?? true,
+      created_by: req.user?.uid ?? null,
+    });
+    res.status(201).json({ id: String(q._id) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create question" });
+  }
+});
+
+// POST /api/admin/questions/approve/:id — mark question approved
+router.post("/questions/approve/:id", requireAdmin, async (req: Request, res) => {
+  try {
+    const id = String(req.params.id);
+    const updated = await Question.findByIdAndUpdate(id, { approved: true, validated: true }, { new: true }).lean();
+    if (!updated) { res.status(404).json({ error: "Question not found" }); return; }
+    res.json({ approved: true, id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to approve question" });
+  }
+});
+
+// POST /api/admin/questions/generate
+router.post("/questions/generate", requireAdmin, async (req: Request, res) => {
+  try {
+    const { subject, track, difficulty, count = 5, pdfContext, allowed_roles } = req.body as any;
+    const VALID = [
+      "civil_procedure", "criminal_procedure", "property_law", "corporate_law",
+      "legal_ethics", "constitutional_law", "evidence_law",
+      "law_of_contract", "law_of_torts", "criminal_law", "equity_and_trusts", "family_law",
+    ];
+    if (!VALID.includes(subject)) { res.status(400).json({ error: "Invalid subject" }); return; }
+    if (!["law_school_track","undergraduate_track"].includes(track)) { res.status(400).json({ error: "Invalid track" }); return; }
+    const created: any[] = [];
+    for (let i = 0; i < Math.min(20, Number(count)); i++) {
+      try {
+        const aiq = await generateQuestion({ subject, difficulty, track, pdfContext });
+        const fullText = [aiq.question, aiq.options?.A ?? "", aiq.options?.B ?? "", aiq.options?.C ?? "", aiq.options?.D ?? "", aiq.explanation ?? "", aiq.topic ?? ""].join(" ");
+        const validated = questionPassesStrictCheck(fullText, subject);
+        const q = await Question.create({
+          subject: aiq.subject,
+          track: aiq.track,
+          difficulty: aiq.difficulty,
+          question: aiq.question,
+          options: aiq.options,
+          correct_option: aiq.correct_option,
+          explanation: aiq.explanation ?? null,
+          topic: aiq.topic ?? null,
+          source: "ai",
+          allowed_roles: allowed_roles ?? undefined,
+          approved: false,
+          validated,
+          created_by: req.user?.uid ?? null,
+        });
+        created.push({ id: String(q._id), validated });
+      } catch (err) {
+        console.error("AI generation item failed:", String(err));
+      }
+    }
+    res.json({ created });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to generate questions" });
+  }
+});
+// ─── Bulk import past exam questions ──────────────────────────────────────────
+router.post("/import-past-questions", requireAdmin, async (req: Request, res) => {
+  try {
+    const { questions, year: globalYear } = req.body as {
+      questions: {
+        subject: string;
+        track: string;
+        difficulty: string;
+        question: string;
+        options: { A: string; B: string; C: string; D: string };
+        correct_option: "A" | "B" | "C" | "D";
+        explanation?: string;
+        topic?: string;
+        year?: number;
+      }[];
+      year?: number; // global year for the entire batch
+    };
+    if (!Array.isArray(questions) || questions.length === 0) {
+      res.status(400).json({ error: "questions array required" });
+      return;
+    }
+
+    const docs = questions.map((q) => ({
+      subject:        q.subject,
+      track:          q.track,
+      difficulty:     q.difficulty,
+      question:       q.question,
+      options:        q.options,
+      correct_option: q.correct_option,
+      explanation:    q.explanation ?? null,
+      topic:          q.topic ?? null,
+      source:         "past",
+      year:           q.year ?? globalYear ?? null,
+      approved:       true,
+      validated:      true,
+      allowed_roles:  ["all"],
+      used_count:     0,
+      created_by:     req.user?.uid ?? null,
+    }));
+
+    const result = await Question.insertMany(docs, { ordered: false });
+    res.json({ imported: result.length });
+  } catch (err) {
+    console.error("Bulk import failed:", err);
+    res.status(500).json({ error: "Failed to import questions" });
+  }
+});
+
+// ─── Review / approve AI-generated questions ──────────────────────────────────
+router.patch("/questions/:id/approve", requireAdmin, async (req: Request, res) => {
+  try {
+    const q = await Question.findByIdAndUpdate(
+      req.params.id,
+      { $set: { approved: true } },
+      { new: true }
+    );
+    if (!q) { res.status(404).json({ error: "Question not found" }); return; }
+    res.json({ approved: true, id: String(q._id) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to approve question" });
+  }
+});
+
+router.patch("/questions/:id/reject", requireAdmin, async (req: Request, res) => {
+  try {
+    const q = await Question.findByIdAndUpdate(
+      req.params.id,
+      { $set: { approved: false } },
+      { new: true }
+    );
+    if (!q) { res.status(404).json({ error: "Question not found" }); return; }
+    res.json({ rejected: true, id: String(q._id) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to reject question" });
+  }
+});
+
+// ─── List unapproved AI questions for review ──────────────────────────────────
+router.get("/questions/pending", requireAdmin, async (_req: Request, res) => {
+  try {
+    const questions = await Question.find({ source: "ai", approved: false })
+      .sort({ created_at: -1 })
+      .limit(50)
+      .lean();
+    res.json(questions.map((q) => ({ ...q, id: String(q._id) })));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch pending questions" });
   }
 });
 

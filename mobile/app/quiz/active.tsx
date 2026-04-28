@@ -47,7 +47,7 @@ function toServerMode(mode: string): ServerMode {
 }
 
 export default function ActiveQuiz() {
-  const params  = useLocalSearchParams<{ subject: string; difficulty: string; count: string; timeLimit: string; mode: string }>();
+  const params  = useLocalSearchParams<{ subject: string; difficulty: string; count: string; timeLimit: string; mode: string; source: string; year: string }>();
   const haptics = useHaptics();
 
   const total   = Number(params.count)     || 10;
@@ -55,6 +55,8 @@ export default function ActiveQuiz() {
   const subject = params.subject           || "all";
   const diff    = params.difficulty        || "mixed";
   const mode    = params.mode              || "practice";
+  const source  = (params.source as "past" | "ai" | "mixed") || "mixed";
+  const year    = params.year ? Number(params.year) : undefined;
 
   const [question,  setQuestion]  = useState<Question | null>(null);
   const [qNumber,   setQNumber]   = useState(1);
@@ -77,6 +79,8 @@ export default function ActiveQuiz() {
         subject:    subject === "all" ? "mixed" : subject,
         track:      trackRef.current,
         difficulty: toServerDifficulty(diff),
+        source,
+        ...(year ? { year } : {}),
       };
       const res = guestRef.current
         ? await api.guestNextQuestion(body)
@@ -170,14 +174,19 @@ export default function ActiveQuiz() {
       }).catch(() => {});
     }
 
-    setWaiting(true);
+    // Show the correct/wrong result on the QuestionCard for 1.5s
+    // before transitioning to the next question.
+    // NOTE: Do NOT call setWaiting(true) here — React 18 would batch it
+    // with setQuestion(updated) above and hide the card before the user
+    // sees the ✅/❌ feedback.
     setTimeout(async () => {
-      setWaiting(false);
+      setWaiting(true);
       if (qNumber >= total) {
         await finishSession();
       } else {
         setQNumber((n) => n + 1);
         await fetchNext();
+        setWaiting(false);
       }
     }, 1500);
   };

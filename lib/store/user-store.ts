@@ -13,6 +13,7 @@ export interface UserState {
   badges: string[];
   country: string;
   track: string;
+  role: string;
   total_questions_answered: number;
   total_correct_answers: number;
   free_questions_remaining: number;
@@ -56,6 +57,7 @@ const DEFAULT_USER: UserState = {
   badges: [],
   country: "NG",
   track: "law_school_track",
+  role: "law_student",
   total_questions_answered: 0,
   total_correct_answers: 0,
   free_questions_remaining: 100,

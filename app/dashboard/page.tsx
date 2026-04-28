@@ -51,6 +51,8 @@ const SUBJECT_ICONS: Record<string, { emoji: string; color: string }> = {
   family_law:          { emoji: "👨‍👩‍👧",  color: "var(--cyber-green)" },
 };
 
+const BAR_SUBJECT_IDS = new Set(["property_law", "civil_procedure", "criminal_procedure", "corporate_law", "legal_ethics"]);
+
 function DailyMissionCard() {
   const user = useUserStore();
   const [progress, setProgress] = useState(0);
@@ -373,7 +375,9 @@ function DashboardContent() {
             </span>
           </div>
           <div className="grid gap-2">
-            {trackData.subjects.map((subject, i) => {
+            {trackData.subjects
+              .filter((subject) => user.role !== "bar_student" || BAR_SUBJECT_IDS.has(subject.id))
+              .map((subject, i) => {
               const icon = SUBJECT_ICONS[subject.id] ?? { emoji: "📚", color: "var(--cyber-cyan)" };
               return (
                 <motion.button

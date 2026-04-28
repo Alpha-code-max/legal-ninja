@@ -13,6 +13,11 @@ const TRACKS = [
   { id: "undergraduate_track", label: "Undergrad",  emoji: "🎓",  desc: "LL.B · University" },
 ] as const;
 
+const ROLES = [
+  { id: "law_student",  label: "📖 Law Student",  desc: "All subjects",       color: "green" },
+  { id: "bar_student",  label: "🎓 Bar Student",  desc: "Bar exam focused",   color: "gold" },
+] as const;
+
 export default function SignUpPage() {
   const router = useRouter();
   const setUser = useUserStore((s) => s.setUser);
@@ -22,6 +27,7 @@ export default function SignUpPage() {
   const [email, setEmail]         = useState("");
   const [password, setPassword]   = useState("");
   const [track, setTrack]         = useState<"law_school_track" | "undergraduate_track">("law_school_track");
+  const [role, setRole]           = useState<"law_student" | "bar_student">("law_student");
   const [referral, setReferral]   = useState("");
   const [error, setError]         = useState<string | null>(null);
   const [loading, setLoading]     = useState(false);
@@ -33,7 +39,7 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       const { token, user } = await api.register({
-        username, email, password, track,
+        username, email, password, track, role,
         ...(referral.trim() ? { referral_code: referral.trim().toUpperCase() } : {}),
       });
       setToken(token);
@@ -48,6 +54,7 @@ export default function SignUpPage() {
         longest_streak:           Number(u.longest_streak ?? 0),
         badges:                   (u.badges as string[]) ?? [],
         country:                  String(u.country ?? "NG"),
+        role:                     String(u.role ?? role),
         total_questions_answered: Number(u.total_questions_answered ?? 0),
         total_correct_answers:    Number(u.total_correct_answers ?? 0),
         free_questions_remaining: Number(u.free_questions_remaining ?? 100),
@@ -129,6 +136,31 @@ export default function SignUpPage() {
                     <div className="text-xl mb-1">{t.emoji}</div>
                     <p className="text-xs font-black" style={{ color: track === t.id ? "var(--cyber-cyan)" : "var(--text-base)" }}>{t.label}</p>
                     <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>{t.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Role selection */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+                Student Type
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {ROLES.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setRole(r.id as typeof role)}
+                    className={cn(
+                      "p-3 rounded-xl border text-left transition-all",
+                      role === r.id
+                        ? `border-cyber-${r.color} bg-cyber-${r.color}/10 shadow-neon-${r.color}`
+                        : "border-cyber-border hover:border-cyber-cyan/40"
+                    )}
+                  >
+                    <p className="text-xs font-black" style={{ color: role === r.id ? `var(--cyber-${r.color})` : "var(--text-base)" }}>{r.label}</p>
+                    <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>{r.desc}</p>
                   </button>
                 ))}
               </div>

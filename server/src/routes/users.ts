@@ -14,6 +14,7 @@ const UpdateProfileSchema = z.object({
   avatar_url: z.string().url().max(500).optional(),
   country:    z.string().length(2).optional(),
   track:      z.enum(["law_school_track", "undergraduate_track"]).optional(),
+  role:       z.enum(["law_student", "bar_student"]).optional(),
 });
 
 // GET /api/users/me

@@ -4,13 +4,17 @@ import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform
 import { router } from "expo-router";
 import { NeonButton } from "@components/ui/NeonButton";
 import { api } from "@lib/api";
-import { setToken } from "@lib/storage";
+import { setToken, clearGuest } from "@lib/storage";
 import { useTheme } from "@context/ThemeContext";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TRACKS = [
   { id: "law_school_track",    label: "Bar Part I" },
   { id: "undergraduate_track", label: "Bar Part II" },
+];
+const ROLES = [
+  { id: "law_student",  label: "📖 Law Student",  desc: "All subjects" },
+  { id: "bar_student",  label: "🎓 Bar Student",  desc: "Bar exam focused" },
 ];
 
 export default function SignUp() {
@@ -19,6 +23,7 @@ export default function SignUp() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [track,    setTrack]    = useState("law_school_track");
+  const [role,     setRole]     = useState("law_student");
   const [referral, setReferral] = useState("");
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
@@ -37,8 +42,9 @@ export default function SignUp() {
     if (password.length < 8)                            { setError("Password must be at least 8 characters."); return; }
     setLoading(true);
     try {
-      const res = await api.register(trimmedEmail, trimmedUsername, password, track, referral.trim() || undefined);
+      const res = await api.register(trimmedEmail, trimmedUsername, password, track, role, referral.trim() || undefined);
       await setToken(res.token);
+      await clearGuest();
       router.replace("/(tabs)");
     } catch (e: any) {
       setError(e.message ?? "Sign up failed. Please try again.");
@@ -86,6 +92,19 @@ export default function SignUp() {
                   <TouchableOpacity key={t.id} onPress={() => setTrack(t.id)}
                     style={{ flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: track === t.id ? "#00F5FF" : colors.border, backgroundColor: track === t.id ? "rgba(0,245,255,0.08)" : colors.inputBg, alignItems: "center" }}>
                     <Text style={{ color: track === t.id ? "#00F5FF" : colors.textMuted, fontSize: 12, fontFamily: "SpaceGrotesk_700Bold" }}>{t.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View>
+              <Text style={labelStyle}>Student Type</Text>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                {ROLES.map((r) => (
+                  <TouchableOpacity key={r.id} onPress={() => setRole(r.id)}
+                    style={{ flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: role === r.id ? (r.id === "bar_student" ? "#FFD700" : "#22FF88") : colors.border, backgroundColor: role === r.id ? (r.id === "bar_student" ? "rgba(255,215,0,0.08)" : "rgba(34,255,136,0.08)") : colors.inputBg, alignItems: "center", gap: 2 }}>
+                    <Text style={{ color: role === r.id ? (r.id === "bar_student" ? "#FFD700" : "#22FF88") : colors.textMuted, fontSize: 12, fontFamily: "SpaceGrotesk_700Bold" }}>{r.label}</Text>
+                    <Text style={{ color: colors.textFaint, fontSize: 9, fontFamily: "SpaceGrotesk_400Regular" }}>{r.desc}</Text>
                   </TouchableOpacity>
                 ))}
               </View>

@@ -14,6 +14,7 @@ const RegisterSchema = z.object({
   email:         z.string().email(),
   password:      z.string().min(8).max(72),
   track:         z.enum(["law_school_track", "undergraduate_track"]).default("law_school_track"),
+  role:          z.enum(["law_student", "bar_student"]).default("law_student"),
   referral_code: z.string().optional(),
 });
 
@@ -37,7 +38,7 @@ const VerifyEmailSchema = z.object({
 
 router.post("/register", validate(RegisterSchema), async (req: Request, res) => {
   try {
-    const { username, email, password, track, referral_code } = req.body as z.infer<typeof RegisterSchema>;
+    const { username, email, password, track, role, referral_code } = req.body as z.infer<typeof RegisterSchema>;
 
     if (await User.exists({ $or: [{ email }, { username }] })) {
       res.status(409).json({ error: "Email or username already taken" });
@@ -61,7 +62,7 @@ router.post("/register", validate(RegisterSchema), async (req: Request, res) => 
     }
 
     const user = await User.create({
-      username, email, password_hash, track,
+      username, email, password_hash, track, role,
       referral_code: referral_code_gen,
       referred_by: referredBy,
       email_verification_token: verification_token,
@@ -71,7 +72,7 @@ router.post("/register", validate(RegisterSchema), async (req: Request, res) => 
 
     await sendVerificationEmail(email, username, verification_token).catch(console.error);
 
-    const token = signToken({ uid: String(user._id), username: user.username, email: user.email, level: user.level });
+    const token = signToken({ uid: String(user._id), username: user.username, email: user.email, level: user.level, role: user.role });
     const { password_hash: _, email_verification_token: _vt, password_reset_token: _rt, ...safeUser } = user.toObject();
     res.status(201).json({ token, user: safeUser, email_verification_sent: true });
   } catch (err) {
@@ -89,7 +90,7 @@ router.post("/login", validate(LoginSchema), async (req: Request, res) => {
       return;
     }
     await User.findByIdAndUpdate(user._id, { last_login_at: new Date() });
-    const token = signToken({ uid: String(user._id), username: user.username, email: user.email, level: user.level });
+    const token = signToken({ uid: String(user._id), username: user.username, email: user.email, level: user.level, role: user.role });
     const { password_hash: _, email_verification_token: _vt, password_reset_token: _rt, ...safeUser } = user.toObject();
     res.json({ token, user: safeUser });
   } catch (err) {

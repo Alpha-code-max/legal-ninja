@@ -70,6 +70,12 @@ const DIFF_META: Record<string, { label: string; color: string; desc: string }> 
   expert: { label: "Legend",   color: "text-cyber-gold",         desc: "Supreme court material" },
 };
 
+const SOURCE_OPTIONS = [
+  { id: "mixed", label: "Mixed",      emoji: "🎲", color: "purple", desc: "Both pools" },
+  { id: "past",  label: "Past Exams", emoji: "📚", color: "gold",   desc: "Real exam questions" },
+  { id: "ai",    label: "AI Gen",     emoji: "🤖", color: "cyan",   desc: "From study materials" },
+] as const;
+
 function QuizContent() {
   const router = useRouter();
   const params = useSearchParams();
@@ -98,6 +104,7 @@ function QuizContent() {
   const [isOffline, setIsOffline]           = useState(false);
   const [combo, setCombo]                   = useState(0);
   const [dailyBlocked, setDailyBlocked]     = useState(false);
+  const [selectedSource, setSelectedSource] = useState<string>("mixed");
 
   const game = useGameStore();
   const user = useUserStore();
@@ -150,10 +157,10 @@ function QuizContent() {
           setLoadError(`Daily limit reached (${GUEST_DAILY_LIMIT} questions). Sign up to keep playing!`);
           return { question: null, fromOffline: false };
         }
-        const data = await api.guestNextQuestion({ subject: subj || track, track, difficulty: diff });
+        const data = await api.guestNextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource });
         return { question: data.question as Question, fromOffline: false };
       }
-      const data = await api.nextQuestion({ subject: subj || track, track, difficulty: diff });
+      const data = await api.nextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource });
       return { question: data.question as Question, fromOffline: false };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
@@ -182,7 +189,7 @@ function QuizContent() {
       }
       return { question: q, fromOffline: true };
     }
-  }, [track, router, isGuest, guest]);
+  }, [track, router, isGuest, guest, selectedSource]);
 
   const startGame = async () => {
     // Daily challenge: enforce one attempt per day
@@ -398,6 +405,28 @@ function QuizContent() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Question Source */}
+          <div>
+            <p className="text-[10px] uppercase tracking-widest font-black mb-2" style={{ color: "var(--text-muted)" }}>Question Source</p>
+            <div className="grid grid-cols-3 gap-2">
+              {SOURCE_OPTIONS.map((s) => (
+                <button key={s.id} onClick={() => setSelectedSource(s.id)}
+                  className={cn(
+                    "py-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1",
+                    selectedSource === s.id
+                      ? `border-cyber-${s.color} bg-cyber-${s.color}/10 shadow-neon-${s.color}`
+                      : "border-cyber-border hover:border-cyber-cyan/50"
+                  )}
+                  style={{ color: selectedSource === s.id ? `var(--cyber-${s.color})` : "var(--text-muted)" }}
+                >
+                  <span className="text-lg">{s.emoji}</span>
+                  <span>{s.label}</span>
+                  <span className="text-[9px] opacity-60">{s.desc}</span>
+                </button>
+              ))}
             </div>
           </div>
 

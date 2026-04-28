@@ -35,6 +35,7 @@ export default function SignInPage() {
         longest_streak:           Number(u.longest_streak ?? 0),
         badges:                   (u.badges as string[]) ?? [],
         country:                  String(u.country ?? "NG"),
+        role:                     String(u.role ?? "law_student"),
         total_questions_answered: Number(u.total_questions_answered ?? 0),
         total_correct_answers:    Number(u.total_correct_answers ?? 0),
         free_questions_remaining: Number(u.free_questions_remaining ?? 100),

@@ -45,14 +45,14 @@ export interface UserProfile {
   total_questions_answered: number; total_correct_answers: number;
   free_questions_remaining: number; paid_questions_balance: number; earned_questions_balance: number;
   badges: string[]; weak_areas: string[]; referral_count: number; referral_code: string;
-  track: string; active_passes: unknown[];
+  track: string; role?: string; active_passes: unknown[];
   daily_goal: { progress: number; target: number; completed: boolean };
 }
 
 export const mobileApi = {
   // Auth
-  register: (email: string, username: string, password: string, track: string, referral_code?: string) =>
-    request<{ token: string; user: UserProfile }>("/auth/register", { method: "POST", body: JSON.stringify({ email, username, password, track, referral_code }) }),
+  register: (email: string, username: string, password: string, track: string, role?: string, referral_code?: string) =>
+    request<{ token: string; user: UserProfile }>("/auth/register", { method: "POST", body: JSON.stringify({ email, username, password, track, role: role ?? "law_student", referral_code }) }),
   login: (email: string, password: string) =>
     request<{ token: string; user: UserProfile }>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   forgotPassword: (email: string) =>
@@ -60,16 +60,16 @@ export const mobileApi = {
 
   // User
   getMe: () => request<UserProfile>("/users/me"),
-  updateMe: (b: { username?: string; track?: string }) =>
+  updateMe: (b: { username?: string; track?: string; role?: string }) =>
     request<UserProfile>("/users/me", { method: "PATCH", body: JSON.stringify(b) }),
   getBalance: () => request<{ free_questions_remaining: number; paid_questions_balance: number; earned_questions_balance: number; total: number; active_passes: unknown[] }>("/users/balance"),
   getQuests: () => request<{ id: string; title: string; target: number; progress: number; status: string; reward_xp: number; reward_questions: number }[]>("/users/quests"),
   claimQuest: (id: string) => request<{ claimed: boolean; reward_xp: number; reward_questions: number }>(`/users/quests/${id}/claim`, { method: "POST" }),
 
   // Questions
-  nextQuestion: (b: { subject: string; track: string; difficulty: string }) =>
+  nextQuestion: (b: { subject: string; track: string; difficulty: string; source?: string; year?: number }) =>
     request<{ question: unknown }>("/questions/next", { method: "POST", body: JSON.stringify(b) }),
-  guestNextQuestion: (b: { subject: string; track: string; difficulty: string }) =>
+  guestNextQuestion: (b: { subject: string; track: string; difficulty: string; source?: string; year?: number }) =>
     request<{ question: unknown }>("/questions/guest-next", { method: "POST", body: JSON.stringify(b) }),
   revealAnswer: (question_id: string) =>
     request<{ correct_option: string; explanation: string | null }>("/questions/reveal", { method: "POST", body: JSON.stringify({ question_id }) }),
