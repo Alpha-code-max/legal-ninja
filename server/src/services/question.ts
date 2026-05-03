@@ -54,8 +54,9 @@ export async function getOrGenerateQuestions(params: {
   source?: "past" | "ai" | "mixed";
   year?: number;
   mode?: string;
+  type?: "mcq" | "essay" | "mixed";
 }): Promise<IQuestion[]> {
-  const { subject, track, difficulty, count, userId, source, year, mode } = params;
+  const { subject, track, difficulty, count, userId, source, year, mode, type } = params;
 
   const seenIds = userId ? await getSeenIds(userId) : [];
   const seenFilter = seenIds.length > 0 ? { _id: { $nin: seenIds } } : {};
@@ -109,7 +110,19 @@ export async function getOrGenerateQuestions(params: {
     return results;
   }
 
-  const results = await fetchQuestions({ ...params, count, seenFilter, allowedRolesClause, sourceFilter, yearFilter, approvedClause });
+  // Convert "mixed" to undefined so fetchQuestions doesn't filter by type
+  const typeFilter = type && type !== "mixed" ? type : undefined;
+
+  const results = await fetchQuestions({
+    ...params,
+    count,
+    type: typeFilter,
+    seenFilter,
+    allowedRolesClause,
+    sourceFilter,
+    yearFilter,
+    approvedClause
+  });
   await incrementUsedCount(results);
   return results;
 }

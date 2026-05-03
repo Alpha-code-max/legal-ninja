@@ -76,10 +76,10 @@ export const api = {
     request<{ status: string; questions_added: number; pass_activated: string | null }>(`/store/verify/${reference}`),
 
   // Questions
-  nextQuestion: (body: { subject: string; track: string; difficulty: string; count?: number; source?: string; year?: number; mode?: string }) =>
+  nextQuestion: (body: { subject: string; track: string; difficulty: string; count?: number; source?: string; year?: number; mode?: string; type?: string }) =>
     request<{ question: unknown }>("/questions/next", { method: "POST", body: JSON.stringify(body) }),
 
-  guestNextQuestion: (body: { subject: string; track: string; difficulty: string; source?: string; year?: number; mode?: string }) =>
+  guestNextQuestion: (body: { subject: string; track: string; difficulty: string; source?: string; year?: number; mode?: string; type?: string }) =>
     request<{ question: unknown }>("/questions/guest-next", { method: "POST", body: JSON.stringify(body) }),
   revealAnswer: (question_id: string) =>
     request<{ correct_option: string; explanation: string | null }>("/questions/reveal", {

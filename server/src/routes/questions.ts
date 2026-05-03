@@ -17,6 +17,7 @@ const GenerateSchema = z.object({
   source:     z.enum(["past", "ai", "mixed"]).default("mixed"),
   year:       z.number().int().min(1990).max(2030).optional(),
   mode:       z.string().optional(),
+  type:       z.enum(["mcq", "essay", "mixed"]).default("mixed"),
 });
 
 // Guest endpoint — no auth, just serves a question from the DB (no balance deduction)

@@ -86,12 +86,14 @@ function QuizContent() {
   const difficulty = (params.get("difficulty") ?? "medium") as Difficulty;
   const count      = parseInt(params.get("count") ?? "5");
   const timeMins   = parseInt(params.get("time")  ?? "15");
+  const type       = params.get("type")      ?? "mixed";
 
   const [phase, setPhase]                   = useState<"setup" | "loading" | "active" | "finished">("setup");
   const [selectedCount, setSelectedCount]   = useState(count);
   const [selectedTime, setSelectedTime]     = useState(timeMins);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(difficulty);
   const [selectedSubject, setSelectedSubject]       = useState(subject);
+  const [selectedType, setSelectedType]     = useState<string>(type);
   const [currentQuestion, setCurrentQuestion]       = useState<Question | null>(null);
   const [questionIndex, setQuestionIndex]           = useState(0);
   const [xpPopup, setXpPopup]               = useState<{ xp: number; correct: boolean } | null>(null);
@@ -158,10 +160,10 @@ function QuizContent() {
           setLoadError(`Daily limit reached (${GUEST_DAILY_LIMIT} questions). Sign up to keep playing!`);
           return { question: null, fromOffline: false };
         }
-        const data = await api.guestNextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode });
+        const data = await api.guestNextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode, type: selectedType });
         return { question: data.question as Question, fromOffline: false };
       }
-      const data = await api.nextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode });
+      const data = await api.nextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode, type: selectedType });
       return { question: data.question as Question, fromOffline: false };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";

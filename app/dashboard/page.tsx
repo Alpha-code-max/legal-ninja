@@ -425,14 +425,22 @@ function DashboardContent() {
                       {subject.name}
                     </span>
                   </button>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => router.push(`/quiz?mode=exam_simulation&track=${track}&subject=${subject.id}`)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
-                      style={{ background: "color-mix(in srgb, var(--cyber-purple) 15%, transparent)", color: "var(--cyber-purple)" }}
-                      title="Mock Exam"
+                      onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}&type=mcq`)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                      style={{ background: "color-mix(in srgb, var(--cyber-cyan) 15%, transparent)", color: "var(--cyber-cyan)" }}
+                      title="Multiple Choice"
                     >
-                      🎓 Mock
+                      📝 MCQ
+                    </button>
+                    <button
+                      onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}&type=essay`)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                      style={{ background: "color-mix(in srgb, var(--cyber-purple) 15%, transparent)", color: "var(--cyber-purple)" }}
+                      title="Essay Questions"
+                    >
+                      ✏️ Essay
                     </button>
                     <Lucide.ChevronRight size={14} className="opacity-30"
                                          style={{ color: icon.color }} />
