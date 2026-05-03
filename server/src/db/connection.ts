@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import mongoose from "mongoose";
 
 export async function connectDB(): Promise<void> {

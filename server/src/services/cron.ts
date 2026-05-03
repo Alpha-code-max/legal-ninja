@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import cron from "node-cron";
 import { User } from "../models/User";
 import { LeaderboardEntry } from "../models/LeaderboardEntry";

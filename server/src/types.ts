@@ -1,3 +1,4 @@
+/// <reference types="node" />
 export interface AuthUser {
   uid: string;
   username: string;

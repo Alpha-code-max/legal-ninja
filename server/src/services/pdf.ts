@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import fs from "fs";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require("pdf-parse") as (buffer: Buffer) => Promise<{ text: string; numpages: number }>;

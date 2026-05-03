@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import type { Request, Response, NextFunction } from "express";
 import type { ZodSchema } from "zod";
 

@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // Mirrors lib/config/progression.ts — single source of truth for the server
 export const LEVELS = [
   { level: 1, name: "1L Rookie",        xp_required: 0,     min_questions: 0,    title: "Fresh Meat" },

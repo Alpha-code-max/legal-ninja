@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { Router, type Request } from "express";
 import { requireAuth } from "../middleware/auth";
 import { LeaderboardEntry } from "../models/LeaderboardEntry";

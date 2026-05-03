@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { Router, type Request } from "express";
 import multer from "multer";
 import path from "path";

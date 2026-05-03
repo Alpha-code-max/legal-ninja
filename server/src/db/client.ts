@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // PostgreSQL removed — project uses MongoDB (Mongoose) exclusively.
 // Stubs exported for files that haven't been migrated yet.
 import mongoose from "mongoose";

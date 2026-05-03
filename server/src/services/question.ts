@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { Question, type IQuestion } from "../models/Question";
 import { GameSession } from "../models/GameSession";
 import { User } from "../models/User";
