@@ -12,9 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Preload fonts to prevent hydration shifts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Fonts from globals.css — already imported via @import */}
 
         {/* Anti-flash theme script — runs before React hydrates */}
         <script
