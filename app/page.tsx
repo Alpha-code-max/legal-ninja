@@ -13,11 +13,11 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl border-b" style={{ borderColor: "var(--cyber-border)", background: "rgba(15, 15, 30, 0.7)" }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <button onClick={() => router.push("/")} className="text-xl font-black neon-text-cyan">
+        <div className="max-w-7xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
+          <button onClick={() => router.push("/")} className="text-lg sm:text-xl font-black neon-text-cyan">
             ⚔️ NINJA
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
             {isLoggedIn ? (
               <NeonButton variant="cyan" size="sm" onClick={() => router.push("/dashboard")}>
@@ -25,7 +25,7 @@ export default function Home() {
               </NeonButton>
             ) : (
               <>
-                <button onClick={() => router.push("/auth/sign-in")} className="text-sm font-bold hidden sm:block" style={{ color: "var(--text-muted)" }}>
+                <button onClick={() => router.push("/auth/sign-in")} className="text-xs sm:text-sm font-bold hidden sm:block" style={{ color: "var(--text-muted)" }}>
                   Sign In
                 </button>
                 <NeonButton variant="cyan" size="sm" onClick={() => router.push("/auth/sign-up")}>

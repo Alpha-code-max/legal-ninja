@@ -25,25 +25,39 @@ export function StudentOnboarding({ onComplete }: StudentOnboardingProps) {
   };
 
   const handleUniversitySubmit = async () => {
-    const university = selectedTrack === "law_school_track"
-      ? selectedUniversity
-      : customUniversity || selectedUniversity;
+    let university = "";
 
-    if (!university || !university.trim()) {
-      alert("Please select or enter your university");
-      return;
+    if (selectedTrack === "law_school_track") {
+      // Law school - must select from dropdown
+      if (!selectedUniversity || !selectedUniversity.trim()) {
+        alert("Please select your law school campus");
+        return;
+      }
+      university = selectedUniversity;
+    } else {
+      // Undergraduate - can select or enter custom
+      if (selectedUniversity === "Other") {
+        if (!customUniversity || !customUniversity.trim()) {
+          alert("Please enter your university name");
+          return;
+        }
+        university = customUniversity;
+      } else if (selectedUniversity) {
+        university = selectedUniversity;
+      } else {
+        alert("Please select or enter your university");
+        return;
+      }
     }
 
     setLoading(true);
     try {
-      await api.updateMe({
-        university: university === "Other" ? customUniversity : university,
-      });
+      await api.updateMe({ university });
       updateUser({ university });
       onComplete();
     } catch (err) {
       console.error("Failed to update university:", err);
-      alert("Failed to save university. Please try again.");
+      alert("Failed to save. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -69,7 +83,8 @@ export function StudentOnboarding({ onComplete }: StudentOnboardingProps) {
                   background: "rgba(192, 38, 211, 0.05)",
                 }}
               >
-                ⚖️ Law School Track
+                <div className="text-lg mb-1">⚖️ Law School</div>
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>Bar Finals · LPA · BL</div>
               </button>
               <button
                 onClick={() => handleTrackSelect("undergraduate_track")}
@@ -80,15 +95,22 @@ export function StudentOnboarding({ onComplete }: StudentOnboardingProps) {
                   background: "rgba(0, 245, 255, 0.05)",
                 }}
               >
-                🎓 Undergraduate Track
+                <div className="text-lg mb-1">🎓 Undergraduate</div>
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>University Law Programs</div>
               </button>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-2xl font-black mb-2">Where are you studying?</h2>
-              <p style={{ color: "var(--text-muted)" }}>Select or enter your school</p>
+              <h2 className="text-2xl font-black mb-2">
+                {selectedTrack === "law_school_track" ? "Which campus?" : "Which university?"}
+              </h2>
+              <p style={{ color: "var(--text-muted)" }}>
+                {selectedTrack === "law_school_track"
+                  ? "Select your Nigerian Law School campus"
+                  : "Select or enter your university"}
+              </p>
             </div>
 
             {selectedTrack === "law_school_track" ? (
@@ -102,7 +124,7 @@ export function StudentOnboarding({ onComplete }: StudentOnboardingProps) {
                   color: "var(--text-base)",
                 }}
               >
-                <option value="">Select your law school...</option>
+                <option value="">Select a campus...</option>
                 {universities.map((school) => (
                   <option key={school} value={school}>
                     {school}
@@ -140,6 +162,7 @@ export function StudentOnboarding({ onComplete }: StudentOnboardingProps) {
                       background: "var(--cyber-bg)",
                       color: "var(--text-base)",
                     }}
+                    onKeyPress={(e) => e.key === "Enter" && handleUniversitySubmit()}
                   />
                 )}
               </div>
