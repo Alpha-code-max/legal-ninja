@@ -14,6 +14,7 @@ export interface UserState {
   country: string;
   track: string;
   role: string;
+  university?: string;
   total_questions_answered: number;
   total_correct_answers: number;
   free_questions_remaining: number;
@@ -44,6 +45,7 @@ interface UserActions {
   addBadge: (badge: string) => void;
   addBadges: (badges: string[]) => void;
   setUser: (user: Partial<UserState>) => void;
+  updateUser: (user: Partial<UserState>) => void;
 }
 
 const DEFAULT_USER: UserState = {
@@ -58,6 +60,7 @@ const DEFAULT_USER: UserState = {
   country: "NG",
   track: "law_school_track",
   role: "law_student",
+  university: "",
   total_questions_answered: 0,
   total_correct_answers: 0,
   free_questions_remaining: 100,
@@ -77,6 +80,8 @@ export const useUserStore = create<UserState & UserActions>()(
       ...DEFAULT_USER,
 
       setUser: (user) => set((s) => ({ ...s, ...user })),
+
+      updateUser: (user) => set((s) => ({ ...s, ...user })),
 
       addXP: (amount) =>
         set((s) => {

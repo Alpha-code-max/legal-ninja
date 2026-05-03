@@ -60,7 +60,7 @@ export const api = {
     badges: string[]; weak_areas: string[]; referral_count: number; referral_code: string;
     daily_goal: { progress: number; target: number; completed: boolean };
   }>("/users/me"),
-  updateMe: (body: { username?: string; avatar_url?: string; country?: string; track?: string; role?: string }) =>
+  updateMe: (body: { username?: string; avatar_url?: string; country?: string; track?: string; role?: string; university?: string }) =>
     request<unknown>("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
   getBalance: () => request<{
     free_questions_remaining: number;

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Suspense, useState, useEffect } from "react";
 import { useUserStore, getTotalBalance } from "@/lib/store/user-store";
 import { useGameStore } from "@/lib/store/game-store";
+import { StudentOnboarding } from "@/components/onboarding/StudentOnboarding";
 import { XPBar } from "@/components/ui/XPBar";
 import { LevelBadge } from "@/components/ui/LevelBadge";
 import { StreakCounter } from "@/components/ui/StreakCounter";
@@ -245,8 +246,16 @@ function DashboardContent() {
     show:   { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 260, damping: 22 } },
   };
 
+  const [showOnboarding, setShowOnboarding] = useState(!user.university);
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+  };
+
   return (
     <div className="min-h-screen pb-40">
+
+      {showOnboarding && <StudentOnboarding onComplete={handleOnboardingComplete} />}
 
       {/* Fixed HUD Header */}
       <div className="fixed top-0 left-0 right-0 z-[60] backdrop-blur-xl border-b h-20"
