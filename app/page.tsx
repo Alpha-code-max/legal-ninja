@@ -13,11 +13,11 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl border-b" style={{ borderColor: "var(--cyber-border)", background: "rgba(15, 15, 30, 0.7)" }}>
-        <div className="max-w-7xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
-          <button onClick={() => router.push("/")} className="text-lg sm:text-xl font-black neon-text-cyan">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <button onClick={() => router.push("/")} className="text-xl font-black neon-text-cyan truncate">
             ⚔️ NINJA
           </button>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <ThemeToggle />
             {isLoggedIn ? (
               <NeonButton variant="cyan" size="sm" onClick={() => router.push("/dashboard")}>
@@ -38,7 +38,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 pt-20">
+      <section className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 pt-20 mt-16">
         <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full blur-[140px] pointer-events-none" style={{ background: "var(--orb-a)" }} />
         <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full blur-[140px] pointer-events-none" style={{ background: "var(--orb-b)" }} />
 
