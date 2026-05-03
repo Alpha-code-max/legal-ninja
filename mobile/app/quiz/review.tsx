@@ -8,18 +8,36 @@ import { api } from "@lib/api";
 import { useTheme } from "@context/ThemeContext";
 
 interface Answer      { question_id: string; selected: string; correct_option: string; }
-interface RevealResult { correct_option: string; explanation?: string; }
+interface RevealResult { correct_option: string; explanation?: string; deep_explanation?: string; }
 
 export default function Review() {
   const { colors } = useTheme();
-  const params     = useLocalSearchParams<{ answersJson: string }>();
+  const params     = useLocalSearchParams<{ answersJson: string; session_id?: string }>();
   const answers    = JSON.parse(params.answersJson ?? "[]") as Answer[];
   const wrong      = answers.filter((a) => a.selected !== a.correct_option && a.selected !== "__timeout__");
+  const sessionId  = params.session_id ?? "";
 
   const [reveals,  setReveals]  = useState<Record<string, RevealResult>>({});
   const [loading,  setLoading]  = useState(true);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [deepLoading, setDeepLoading] = useState<Record<string, boolean>>({});
   const [fetchErr, setFetchErr] = useState<string | null>(null);
+
+  const requestDeepExplanation = async (questionId: string) => {
+    if (!sessionId || deepLoading[questionId]) return;
+    setDeepLoading((d) => ({ ...d, [questionId]: true }));
+    try {
+      const result = await api.requestDeepExplanation(sessionId, questionId);
+      setReveals((r) => ({
+        ...r,
+        [questionId]: { ...r[questionId], deep_explanation: result.deep_explanation },
+      }));
+    } catch (err) {
+      console.error("Deep explanation failed:", err);
+    } finally {
+      setDeepLoading((d) => ({ ...d, [questionId]: false }));
+    }
+  };
 
   useEffect(() => {
     if (wrong.length === 0) { setLoading(false); return; }
@@ -96,6 +114,28 @@ export default function Review() {
                           {isOpen && (
                             <View style={{ backgroundColor: "rgba(0,245,255,0.04)", borderLeftWidth: 3, borderLeftColor: "#00F5FF", padding: 12, marginTop: 4 }}>
                               <Text style={{ color: colors.text, fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", lineHeight: 18 }}>{reveal.explanation}</Text>
+
+                              {/* Deep Explanation Section */}
+                              {!reveal.deep_explanation && sessionId && (
+                                <TouchableOpacity
+                                  onPress={() => requestDeepExplanation(a.question_id)}
+                                  disabled={deepLoading[a.question_id]}
+                                  style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "rgba(0,245,255,0.2)", flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                  <Text style={{ color: "#FFD700", fontSize: 10, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase" }}>✨ Deep Explanation</Text>
+                                  {deepLoading[a.question_id] ? (
+                                    <ActivityIndicator size="small" color="#FFD700" />
+                                  ) : (
+                                    <Text style={{ color: "#FFD700", fontSize: 12 }}>→</Text>
+                                  )}
+                                </TouchableOpacity>
+                              )}
+
+                              {reveal.deep_explanation && (
+                                <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "rgba(255,215,0,0.2)" }}>
+                                  <Text style={{ color: "#FFD700", fontSize: 10, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase", marginBottom: 6 }}>✨ Deep Explanation</Text>
+                                  <Text style={{ color: colors.text, fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", lineHeight: 18 }}>{reveal.deep_explanation}</Text>
+                                </View>
+                              )}
                             </View>
                           )}
                         </>

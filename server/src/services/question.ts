@@ -20,7 +20,7 @@ const TRACK_SUBJECTS: Record<string, string[]> = {
 const TRACK_IDS = new Set(Object.keys(TRACK_SUBJECTS));
 
 function isGeneralMode(subject: string): boolean {
-  return TRACK_IDS.has(subject);
+  return TRACK_IDS.has(subject) || subject === "mixed";
 }
 
 async function getSeenIds(userId: string): Promise<mongoose.Types.ObjectId[]> {
@@ -53,8 +53,9 @@ export async function getOrGenerateQuestions(params: {
   userId?: string;
   source?: "past" | "ai" | "mixed";
   year?: number;
+  mode?: string;
 }): Promise<IQuestion[]> {
-  const { subject, track, difficulty, count, userId, source, year } = params;
+  const { subject, track, difficulty, count, userId, source, year, mode } = params;
 
   const seenIds = userId ? await getSeenIds(userId) : [];
   const seenFilter = seenIds.length > 0 ? { _id: { $nin: seenIds } } : {};
@@ -91,16 +92,59 @@ export async function getOrGenerateQuestions(params: {
   // approved: { $ne: false } matches true AND undefined (backwards-compatible)
   const approvedClause = { approved: { $ne: false } };
 
+  // ── EXAM SIMULATION: Essay-only questions from the specific subject ─────────
+  if (mode === "exam_simulation") {
+    const results = await fetchQuestions({
+      ...params,
+      count: 1,
+      type: "essay",
+      seenFilter,
+      allowedRolesClause,
+      sourceFilter,
+      yearFilter,
+      approvedClause
+    });
+
+    await incrementUsedCount(results);
+    return results;
+  }
+
+  const results = await fetchQuestions({ ...params, count, seenFilter, allowedRolesClause, sourceFilter, yearFilter, approvedClause });
+  await incrementUsedCount(results);
+  return results;
+}
+
+async function fetchQuestions(params: {
+  subject: string;
+  track: string;
+  difficulty: string;
+  count: number;
+  type?: "mcq" | "essay";
+  seenFilter: any;
+  allowedRolesClause: any;
+  sourceFilter: any;
+  yearFilter: any;
+  approvedClause: any;
+}): Promise<IQuestion[]> {
+  const { subject, track, difficulty, count, type, seenFilter, allowedRolesClause, sourceFilter, yearFilter, approvedClause } = params;
+  const typeFilter = type ? { type } : {};
+
+  // For exam_simulation with no results, be more lenient with filters
+  const isLenientMode = !type || type === "mcq";
+
   // ── GENERAL MODE: pull from any subject in the track ─────────────────────
   if (isGeneralMode(subject)) {
     const subjects = TRACK_SUBJECTS[track] ?? TRACK_SUBJECTS.law_school_track;
-    const results = await Question.aggregate<IQuestion>([
+
+    // Try strict mode first (with approval filter)
+    let results = await Question.aggregate<IQuestion>([
       {
         $match: {
           track,
           subject: { $in: subjects },
           difficulty,
           used_count: { $lt: REUSE_THRESHOLD },
+          ...typeFilter,
           ...approvedClause,
           ...seenFilter,
           ...allowedRolesClause,
@@ -110,22 +154,43 @@ export async function getOrGenerateQuestions(params: {
       },
       { $sample: { size: count } },
     ]);
-    await incrementUsedCount(results);
+
+    // Fallback: if no results, try without approval filter
+    if (results.length === 0) {
+      results = await Question.aggregate<IQuestion>([
+        {
+          $match: {
+            track,
+            subject: { $in: subjects },
+            difficulty,
+            used_count: { $lt: REUSE_THRESHOLD },
+            ...typeFilter,
+            ...seenFilter,
+            $or: [{ allowed_roles: { $exists: false } }, { allowed_roles: { $in: ["all", "law_student"] } }],
+            ...sourceFilter,
+            ...yearFilter,
+          },
+        },
+        { $sample: { size: count } },
+      ]);
+    }
+
     return results;
   }
 
   // ── SPECIFIC SUBJECT MODE: serve ONLY from this subject's bank ───────────
-  const fetchFromBank = async (matchDifficulty: boolean) =>
+  const fetchFromBank = async (matchDifficulty: boolean, strict: boolean = true) =>
     Question.aggregate<IQuestion>([
       {
         $match: {
           subject,
-          track, // enforce track so constitutional_law doesn't bleed across tracks
+          track,
           ...(matchDifficulty ? { difficulty } : {}),
           used_count: { $lt: REUSE_THRESHOLD },
-          ...approvedClause,
+          ...typeFilter,
+          ...(strict ? approvedClause : {}),
           ...seenFilter,
-          ...allowedRolesClause,
+          ...(strict ? allowedRolesClause : { $or: [{ allowed_roles: { $exists: false } }, { allowed_roles: { $in: ["all", "law_student"] } }] }),
           ...sourceFilter,
           ...yearFilter,
         },
@@ -133,13 +198,17 @@ export async function getOrGenerateQuestions(params: {
       { $sample: { size: count * 3 } },
     ]);
 
-  // Try exact difficulty first, fall back to any difficulty in the bank
   let raw = await fetchFromBank(true);
   if (raw.length === 0) raw = await fetchFromBank(false);
+  // If still empty, try without strict approval filter
+  if (raw.length === 0) raw = await fetchFromBank(true, false);
+  if (raw.length === 0) raw = await fetchFromBank(false, false);
 
-  const results = raw
+  return raw
     .filter((q) => {
-      // Validate against full question text including all options and explanation
+      // Skip strict check for essay questions (they're manually curated)
+      if (q.type === "essay") return true;
+
       const fullText = [
         q.question,
         q.options?.A ?? "", q.options?.B ?? "", q.options?.C ?? "", q.options?.D ?? "",
@@ -149,9 +218,6 @@ export async function getOrGenerateQuestions(params: {
       return questionPassesStrictCheck(fullText, subject);
     })
     .slice(0, count);
-
-  await incrementUsedCount(results);
-  return results;
 }
 
 // ─── Balance check & deduction ────────────────────────────────────────────────

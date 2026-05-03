@@ -1,0 +1,182 @@
+═══════════════════════════════════════════════════════════════════════════
+CLAUDE DESIGN PROMPT - LEGAL NINJA LANDING PAGE REDESIGN
+═══════════════════════════════════════════════════════════════════════════
+
+COPY & PASTE THIS INTO CLAUDE DESIGN:
+
+═══════════════════════════════════════════════════════════════════════════
+
+You are designing a premium landing page for "Legal Ninja" - a competitive gamified law quiz platform for Nigerian students preparing for bar exams and university finals.
+
+## PROJECT CONTEXT
+
+Product: Legal Ninja (Nigerian EdTech + Gaming Platform)
+Target: Law students 18-28 preparing for bar exams and finals
+Current Design: Cyberpunk neon theme with ninja/samurai aesthetic (works but needs enhancement)
+Goal: High-conversion landing page maintaining gaming energy with premium polish
+
+## CURRENT STATE ISSUES TO FIX
+
+❌ Long page requires excessive scrolling
+❌ Vague value proposition ("master the law through competitive duels")
+❌ Missing social proof (no testimonials/reviews)
+❌ No feature showcase explaining what makes it unique
+❌ Guest option competes with sign-up CTA
+❌ Limited trust indicators
+❌ Mobile experience cramped
+
+## DESIGN SECTIONS (Hero → Footer)
+
+1. STICKY NAVIGATION
+   - Logo left | Nav links center (Features, How it Works, Pricing, About) | Sign In / Sign Up right
+   - Mobile: Hamburger menu
+   - Transparent, becomes solid on scroll
+
+2. HERO SECTION (Full-width, above fold)
+   Layout: Split screen preferred (60% left, 40% right)
+
+   LEFT SIDE:
+   - Clear headline (benefit-driven, not "master through duels")
+   - Supporting subheading (1-2 sentences)
+   - Two CTAs: Sign Up (primary cyan), Sign In (secondary ghost)
+   - Trust badge: "Trusted by 10K+ Nigerian Law Students"
+
+   RIGHT SIDE:
+   - Enhanced animated ninja illustration OR gameplay animation
+   - Floating elements showing: XP badges, level progression, ranking
+
+3. VALUE PROPOSITION (3-column grid, responsive)
+   Show 6 benefits as cards:
+   ⚡ Competitive Gaming - Battle in duels, track rank, earn XP
+   📚 Exam-Aligned Questions - Past exams, bar prep, AI scenarios
+   🎯 Smart Learning - Weak area detection, daily challenges, spaced repetition
+   🏆 Instant Feedback - Real-time scoring, detailed explanations
+   👥 Community Features - Study groups, leaderboards, friend duels
+   💎 Premium Unlocked - Unlimited questions from ₦700/week
+
+4. HOW IT WORKS (Timeline or horizontal steps - 4 steps)
+   1. Sign Up → 2. Pick Subject → 3. Answer & Learn → 4. Track Progress
+   Each with icon, title, description, and app mockup screenshot
+
+5. FEATURES SHOWCASE (3 alternating blocks)
+   Block 1 - Quiz Modes: Solo Practice, Duels, Battle Royale, Daily Challenges, Mocks
+   Block 2 - Question Types: MCQ, Essay AI-scoring, Past papers, Topic filtering
+   Block 3 - Analytics: Dashboard, weak area detection, streaks, levels, leaderboard
+
+6. SOCIAL PROOF (Testimonials)
+   3 student testimonial cards: Photo | Name & Track | 2-line quote | 5-star rating | Result
+   Example: "Went from 40% to 92% in 3 months"
+
+7. PRICING SECTION
+   Free: 100 free questions, all modes, daily challenges, community
+   Premium: Unlimited questions, advanced analytics, priority support (₦700/week)
+   Show both tier cards with clear CTAs
+
+8. FAQ (Accordion)
+   5-7 questions covering: Free questions limit, bar exam prep, past papers, mobile app, ranking, cancellation, security
+
+9. FOOTER
+   Logo + copyright | Quick links (Privacy, Terms, Help) | Social links (Twitter, LinkedIn, Instagram)
+
+## COLOR PALETTE (Cyberpunk Neon - maintain)
+
+Primary Colors:
+- Cyber Cyan: #00F5FF (Primary CTA, accents)
+- Cyber Purple: #C026D3 (Secondary, premium)
+- Cyber Green: #22FF88 (Success, progress)
+- Cyber Gold: #FFD700 (Highlights, VIP)
+- Cyber Red: #FF0055 (Errors)
+
+Backgrounds:
+- Dark: #0f0f1e (Primary)
+- Card: #1a1a2e
+- Text: #e2eaf0 (primary), rgba(226,234,240,0.45) (muted)
+
+## TYPOGRAPHY
+
+- Headings: Space Grotesk Bold/Black (H1: 48-64px desktop, 32px mobile)
+- Body: Space Grotesk Regular 16px
+- Monospace: Space Mono (for stats/badges)
+
+## DESIGN STYLE
+
+- Modern gaming platform aesthetic (Discord, Valorant, League energy)
+- Cyberpunk neon with subtle gradients
+- Glass-morphism effects: rgba(26,26,46,0.4) + blur(10px)
+- Glow effects: 0 0 20px rgba(0,245,255,0.3)
+- Smooth animations on scroll/hover (0.6s, easeInOut)
+- Floating particles in background
+- Parallax scrolling on hero
+- Neon borders with subtle glow
+
+## RESPONSIVE DESIGN
+
+- Desktop: 1440px+ (full features)
+- Tablet: 768px-1439px (2-column where appropriate)
+- Mobile: 320-767px (stacked, simplified animations, 44px touch targets)
+
+## INTERACTIVE ELEMENTS
+
+- Primary buttons: Solid cyan bg, glow, 1.05 scale on hover
+- Secondary buttons: Ghost style, subtle hover fill
+- Forms: Glowing border on focus, cyan outline
+- Accordions: Smooth expand, icon rotate on open
+- Smooth scroll to sections
+
+## ACCESSIBILITY (WCAG 2.1 AA)
+
+- Color contrast minimum 4.5:1 for text
+- Keyboard navigation support
+- ARIA labels for icons
+- Visible focus indicators
+- Alt text for all images
+- Semantic HTML
+- Lighthouse score target: 85+
+
+## KEY REQUIREMENTS
+
+✅ Mobile-first responsive design
+✅ High conversion focus (clear value prop, strong CTAs)
+✅ Premium polish while maintaining gaming energy
+✅ Showcase unique features (duels, leaderboards, weak area detection)
+✅ Build trust (social proof, security, credibility)
+✅ Fast loading (optimize images, GPU animations)
+✅ Maintain ninja mascot as key brand element
+✅ Clear free vs premium messaging (no aggressive upselling)
+
+## DESIGN INSPIRATIONS
+
+- Discord (community energy, clean UI)
+- Duolingo (gamification, conversion funnels)
+- Valorant (premium gaming aesthetic)
+- Modern EdTech platforms (Coursera, Skillshare)
+
+## SUCCESS METRICS
+
+Target: 8-12% conversion rate (sign-up/visit)
+Desired: 2+ min time on page, <40% bounce rate, 100 mobile score, 85+ Lighthouse
+
+═══════════════════════════════════════════════════════════════════════════
+
+END PROMPT
+
+═══════════════════════════════════════════════════════════════════════════
+
+INSTRUCTIONS FOR USE:
+
+1. Copy everything between the "CLAUDE DESIGN PROMPT" header and "END PROMPT" footer
+2. Paste into Claude Design chat
+3. Ask Claude Design to create:
+   - High-fidelity mockups (desktop, tablet, mobile)
+   - Interactive prototype showing key interactions
+   - Component library specs
+   - Design tokens (colors, spacing, typography)
+
+4. Additional requests you can make:
+   - "Create the hero section first, focusing on conversion"
+   - "Design the features showcase with better visual hierarchy"
+   - "Make mobile version prioritizing touch targets and readability"
+   - "Add animation specifications for all interactions"
+   - "Export as design tokens JSON for development"
+
+═══════════════════════════════════════════════════════════════════════════

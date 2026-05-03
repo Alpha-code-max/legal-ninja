@@ -6,6 +6,7 @@ import { useGameStore, type Question } from "@/lib/store/game-store";
 import { useUserStore } from "@/lib/store/user-store";
 import { useGuestStore, GUEST_DAILY_LIMIT } from "@/lib/store/guest-store";
 import { QuestionCard } from "@/components/game/QuestionCard";
+import { EssayQuestionCard } from "@/components/game/EssayQuestionCard";
 import { TimerRing } from "@/components/ui/TimerRing";
 import { StreakCounter } from "@/components/ui/StreakCounter";
 import { NeonButton } from "@/components/ui/NeonButton";
@@ -60,7 +61,7 @@ const MODE_META: Record<string, { label: string; emoji: string; desc: string; xp
   daily_challenge: { label: "Daily Challenge",   emoji: "🎯",  desc: "Today's timed challenge — one attempt",     xp: "1.5×", color: "green" },
   weak_area_focus: { label: "Weak Area Grind",   emoji: "🔥",  desc: "Targeted questions on your weak subjects",  xp: "1.2×", color: "red" },
   flashcard_review:{ label: "Flashcard Review",  emoji: "📚",  desc: "Spaced repetition learning",                xp: "0.8×", color: "cyan" },
-  exam_simulation: { label: "Exam Simulation",   emoji: "📝",  desc: "Full mock exam under timed conditions",     xp: "1.5×", color: "purple" },
+  exam_simulation: { label: "Mock Exam",         emoji: "🎓",  desc: "Mixed MCQ & Essay under exam conditions",   xp: "2.0×", color: "purple" },
 };
 
 const DIFF_META: Record<string, { label: string; color: string; desc: string }> = {
@@ -157,10 +158,10 @@ function QuizContent() {
           setLoadError(`Daily limit reached (${GUEST_DAILY_LIMIT} questions). Sign up to keep playing!`);
           return { question: null, fromOffline: false };
         }
-        const data = await api.guestNextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource });
+        const data = await api.guestNextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode });
         return { question: data.question as Question, fromOffline: false };
       }
-      const data = await api.nextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource });
+      const data = await api.nextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode });
       return { question: data.question as Question, fromOffline: false };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
@@ -238,15 +239,34 @@ function QuizContent() {
     setPhase("active");
   };
 
+  const finishSession = useCallback(async () => {
+    let endResult: { levelDirection?: "up" | "down" | null; newBadges?: string[]; answers?: any[] } = {};
+    if (sessionId && !isOffline && !isGuest) {
+      try {
+        const r = await api.endSession(sessionId);
+        endResult = { levelDirection: r.levelDirection, newBadges: r.newBadges, answers: r.answers };
+        if (r.newBadges?.length) user.addBadges(r.newBadges);
+      } catch { /* offline */ }
+    }
+    // Mark daily challenge as completed for today
+    if (mode === "daily_challenge" && !isGuest && user.uid) {
+      const key = `daily_challenge_${user.uid}_${new Date().toISOString().slice(0, 10)}`;
+      localStorage.setItem(key, "1");
+    }
+    game.endSession(endResult);
+    router.push("/results");
+  }, [sessionId, isOffline, isGuest, user, mode, game, router]);
+
   const handleAnswer = async (selected: string, answerTimeTakenMs?: number) => {
     if (!currentQuestion || isRevealing) return;
     setIsRevealing(true);
 
+    const isEssay = currentQuestion.type === "essay";
     let correctOption: "A" | "B" | "C" | "D" | undefined;
     let explanation: string | null = null;
 
-    // Reveal for all users (guests get correct_option + explanation too)
-    if (!isOffline) {
+    // Reveal only for MCQs
+    if (!isOffline && !isEssay) {
       try {
         const revealed = isGuest
           ? await api.guestRevealAnswer(currentQuestion.id)
@@ -269,39 +289,46 @@ function QuizContent() {
     }
 
     const timeTakenMs = answerTimeTakenMs ?? 15000;
-    const correct = selected === correctOption;
+    const correct = isEssay ? true : selected === correctOption;
     const { xp_gained } = game.submitAnswer(selected, timeTakenMs);
     if (!isGuest) {
       user.recordAnswer(correct);
       user.addXP(xp_gained);
     }
-    if (correct) setCombo((c) => c + 1); else setCombo(0);
+
     if (sessionId && !isOffline && !isGuest) {
-      api.submitAnswer({ session_id: sessionId, question_id: currentQuestion.id, selected, correct_option: correctOption ?? selected, time_taken_ms: timeTakenMs, streak: game.streak }).catch(console.error);
+      api.submitAnswer({ 
+        session_id: sessionId, 
+        question_id: currentQuestion.id, 
+        selected, 
+        correct_option: isEssay ? selected : (correctOption ?? selected), 
+        time_taken_ms: timeTakenMs, 
+        streak: game.streak 
+      }).catch(console.error);
     }
+
+    if (isEssay) {
+      const nextIndex = questionIndex + 1;
+      if (nextIndex >= selectedCount) {
+        setIsRevealing(false);
+        await finishSession();
+      } else {
+        const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex);
+        if (q) { setIsOffline(fromOffline); setCurrentQuestion(q); setQuestionIndex(nextIndex); }
+        setIsRevealing(false);
+      }
+      return;
+    }
+
+    if (correct) setCombo((c) => c + 1); else setCombo(0);
     setXpPopup({ xp: xp_gained, correct });
     setTimeout(() => setXpPopup(null), 1400);
     setBubblePop({ correct, id: questionIndex });
     setTimeout(() => setBubblePop(null), 900);
+    
     const nextIndex = questionIndex + 1;
     if (nextIndex >= selectedCount) {
-      nextActionRef.current = async () => {
-        let endResult: { levelDirection?: "up" | "down" | null; newBadges?: string[] } = {};
-        if (sessionId && !isOffline && !isGuest) {
-          try {
-            const r = await api.endSession(sessionId);
-            endResult = { levelDirection: r.levelDirection, newBadges: r.newBadges };
-            if (r.newBadges?.length) user.addBadges(r.newBadges);
-          } catch { /* offline */ }
-        }
-        // Mark daily challenge as completed for today
-        if (mode === "daily_challenge" && !isGuest && user.uid) {
-          const key = `daily_challenge_${user.uid}_${new Date().toISOString().slice(0, 10)}`;
-          localStorage.setItem(key, "1");
-        }
-        game.endSession(endResult);
-        router.push("/results");
-      };
+      nextActionRef.current = finishSession;
       setCountdown(20);
       return;
     }
@@ -513,6 +540,7 @@ function QuizContent() {
 
   // ─── ACTIVE ───
   if (phase === "active" && currentQuestion) {
+    const isEssay = currentQuestion.type === "essay";
     return (
       <div className="min-h-screen px-4 py-5">
         {/* Top HUD */}
@@ -594,15 +622,26 @@ function QuizContent() {
         </AnimatePresence>
 
         <AnimatePresence mode="wait">
-          <QuestionCard
-            key={currentQuestion.id}
-            question={currentQuestion}
-            questionNumber={questionIndex + 1}
-            total={selectedCount}
-            onAnswer={handleAnswer}
-            disabled={isRevealing}
-            isGuest={isGuest}
-          />
+          {isEssay ? (
+            <EssayQuestionCard
+              key={currentQuestion.id}
+              question={currentQuestion}
+              questionNumber={questionIndex + 1}
+              total={selectedCount}
+              onAnswer={handleAnswer}
+              disabled={isRevealing}
+            />
+          ) : (
+            <QuestionCard
+              key={currentQuestion.id}
+              question={currentQuestion}
+              questionNumber={questionIndex + 1}
+              total={selectedCount}
+              onAnswer={handleAnswer}
+              disabled={isRevealing}
+              isGuest={isGuest}
+            />
+          )}
         </AnimatePresence>
 
         {/* Countdown bar + Skip button */}

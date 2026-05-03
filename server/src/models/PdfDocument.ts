@@ -8,6 +8,7 @@ export interface IPdfDocument extends Document {
   chunk_count: number;
   file_size_bytes: number;
   uploaded_by: mongoose.Types.ObjectId | null;
+  doc_type?: "mcq_only" | "essay_only" | "mixed"; // Document classification
   created_at: Date;
 }
 
@@ -20,6 +21,7 @@ const PdfDocumentSchema = new Schema<IPdfDocument>(
     chunk_count:     { type: Number, default: 0 },
     file_size_bytes: { type: Number, default: 0 },
     uploaded_by:     { type: Schema.Types.ObjectId, ref: "User", default: null },
+    doc_type:        { type: String, enum: ["mcq_only", "essay_only", "mixed"], default: null },
     created_at:      { type: Date, default: Date.now },
   },
   { timestamps: false }

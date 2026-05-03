@@ -6,6 +6,14 @@ export interface IAnswerRecord {
   correct: boolean;
   time_taken_ms: number;
   xp_gained: number;
+  // Essay fields
+  score?: number;
+  feedback?: string;
+  strengths?: string[];
+  weaknesses?: string[];
+  // AI evaluation fields
+  ai_evaluation?: string;      // Step 8: feedback for wrong MCQ answers
+  deep_explanation?: string;   // Step 9: premium deep legal explanation
 }
 
 export interface IGameSession extends Document {
@@ -51,6 +59,12 @@ const GameSessionSchema = new Schema<IGameSession>(
       correct:      Boolean,
       time_taken_ms:Number,
       xp_gained:    Number,
+      score:        Number,
+      feedback:     String,
+      strengths:    [String],
+      weaknesses:   [String],
+      ai_evaluation:String,      // Step 8: feedback for wrong MCQ answers
+      deep_explanation:String,   // Step 9: premium deep legal explanation
     }],
     started_at:     { type: Date, default: Date.now },
     ended_at:       { type: Date, default: null },

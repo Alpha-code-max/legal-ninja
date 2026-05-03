@@ -4,6 +4,8 @@ import { requireAuth } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { submitAnswer, endGameSession } from "../services/game";
 import { GameSession } from "../models/GameSession";
+import { Question } from "../models/Question";
+import { generateDeepExplanation } from "../services/ai";
 import mongoose from "mongoose";
 
 const router = Router();
@@ -20,8 +22,8 @@ const StartSchema = z.object({
 const AnswerSchema = z.object({
   session_id:     z.string().min(1),
   question_id:    z.string().min(1),
-  selected:       z.enum(["A", "B", "C", "D"]),
-  correct_option: z.enum(["A", "B", "C", "D"]).optional(),
+  selected:       z.string().min(1), // Changed from enum to string for essay support
+  correct_option: z.string().optional(),
   time_taken_ms:  z.number().int().min(0).max(600000),
   streak:         z.number().int().min(0),
 });
@@ -91,6 +93,59 @@ router.get("/history", requireAuth, async (req: Request, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
+
+// Step 9: Deep explanation endpoint (premium feature)
+router.post("/:sessionId/answer/:questionId/explain", requireAuth, async (req: Request, res) => {
+  try {
+    const sessionId = String(req.params.sessionId);
+    const questionId = String(req.params.questionId);
+
+    // Verify session ownership
+    const session = await GameSession.findOne({
+      _id: new mongoose.Types.ObjectId(sessionId),
+      user_id: new mongoose.Types.ObjectId(req.user!.uid),
+    });
+    if (!session) { res.status(404).json({ error: "Session not found" }); return; }
+
+    // Find the answer in the session
+    const answer = session.answers.find(a => a.question_id === questionId);
+    if (!answer) { res.status(404).json({ error: "Answer not found in session" }); return; }
+
+    // Get the question
+    const question = await Question.findById(questionId);
+    if (!question) { res.status(404).json({ error: "Question not found" }); return; }
+
+    // Only allow explanations for wrong MCQ answers
+    if (question.type === "essay" || answer.correct) {
+      res.status(400).json({ error: "Deep explanations only available for incorrect MCQ answers" });
+      return;
+    }
+
+    // Generate deep explanation
+    const correctText = String((question.options as any)?.[question.correct_option] || "");
+    const selectedText = String((question.options as any)?.[answer.selected] || answer.selected);
+
+    const deepExplanation = await generateDeepExplanation({
+      question: question.question,
+      correctOption: question.correct_option,
+      correctText,
+      selectedOption: answer.selected,
+      selectedText,
+      subject: question.subject,
+    });
+
+    // Save to session
+    await GameSession.updateOne(
+      { _id: new mongoose.Types.ObjectId(sessionId), "answers.question_id": questionId },
+      { $set: { "answers.$.deep_explanation": deepExplanation } }
+    );
+
+    res.json({ deep_explanation: deepExplanation });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to generate deep explanation" });
   }
 });
 

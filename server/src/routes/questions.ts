@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { getOrGenerateQuestions, checkAndDeductQuestion } from "../services/question";
-import { generateExplanation } from "../services/ai";
 import { Question } from "../models/Question";
 import { User } from "../models/User";
 import { isSubjectAllowed } from "../config/subjects";
@@ -17,13 +16,7 @@ const GenerateSchema = z.object({
   count:      z.number().int().min(1).max(20).default(10),
   source:     z.enum(["past", "ai", "mixed"]).default("mixed"),
   year:       z.number().int().min(1990).max(2030).optional(),
-});
-
-const ExplanationSchema = z.object({
-  question:      z.string().max(500),
-  wrong_answer:  z.string().max(200),
-  correct_answer:z.string().max(200),
-  subject:       z.string().max(60),
+  mode:       z.string().optional(),
 });
 
 // Guest endpoint — no auth, just serves a question from the DB (no balance deduction)
@@ -33,9 +26,10 @@ router.post("/guest-next", validate(GenerateSchema), async (req: Request, res) =
       subject:    req.body.subject,
       track:      req.body.track,
       difficulty: req.body.difficulty,
-      count:      1,
+      count:      req.body.count ?? 1,
       source:     req.body.source ?? "mixed",
       year:       req.body.year,
+      mode:       req.body.mode,
     });
     if (questions.length === 0) {
       res.status(503).json({ error: "BANK_EMPTY" });
@@ -69,10 +63,11 @@ router.post("/next", requireAuth, validate(GenerateSchema), async (req: Request,
       subject:    req.body.subject,
       track:      req.body.track,
       difficulty: req.body.difficulty,
-      count:      1,
+      count:      req.body.count ?? 1,
       userId:     req.user!.uid,
       source:     req.body.source ?? "mixed",
       year:       req.body.year,
+      mode:       req.body.mode,
     });
 
     if (questions.length === 0) {
@@ -117,17 +112,6 @@ router.post("/guest-reveal", async (req: Request, res) => {
     res.json({ correct_option: question.correct_option, explanation: question.explanation });
   } catch (err) {
     res.status(500).json({ error: "Failed to reveal answer" });
-  }
-});
-
-router.post("/explain", requireAuth, validate(ExplanationSchema), async (req: Request, res) => {
-  try {
-    const { question, wrong_answer, correct_answer, subject } = req.body as z.infer<typeof ExplanationSchema>;
-    const explanation = await generateExplanation(question, wrong_answer, correct_answer, subject);
-    res.json({ explanation });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to generate explanation" });
   }
 });
 

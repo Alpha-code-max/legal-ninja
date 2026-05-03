@@ -2,8 +2,10 @@ import { GameSession } from "../models/GameSession";
 import { User } from "../models/User";
 import { LeaderboardEntry } from "../models/LeaderboardEntry";
 import { Quest } from "../models/Quest";
+import { Question } from "../models/Question";
 import mongoose from "mongoose";
 import { LEVEL_DYNAMICS, LEVELS, XP_SOURCES } from "./progression";
+import { gradeEssay } from "./ai";
 
 export async function submitAnswer(params: {
   sessionId: string;
@@ -21,13 +23,29 @@ export async function submitAnswer(params: {
   direction: "up" | "down" | null;
 }> {
   const { sessionId, userId, questionId, selected, correctOption, timeTakenMs, streak } = params;
-  const correct = selected === correctOption;
+  
+  const question = await Question.findById(questionId);
+  const isEssay = question?.type === "essay";
 
-  const xpGained = correct
-    ? XP_SOURCES.correct_answer + streak * XP_SOURCES.streak_bonus + Math.round(8 * Math.max(0, 1 - timeTakenMs / 30000))
-    : 0;
-  const newStreak = correct ? streak + 1 : 0;
-  const scoreDelta = correct ? 10 : -3;
+  let correct = false;
+  let xpGained = 0;
+  let newStreak = streak;
+  let scoreDelta = 0;
+
+  if (isEssay) {
+    // Essay: score/XP/streak update happens at endGameSession
+    correct = false; // Pending grading
+    xpGained = 0;
+    newStreak = streak; // Streak is unaffected by essays during the session
+    scoreDelta = 0;
+  } else {
+    correct = selected === correctOption;
+    xpGained = correct
+      ? XP_SOURCES.correct_answer + streak * XP_SOURCES.streak_bonus + Math.round(8 * Math.max(0, 1 - timeTakenMs / 30000))
+      : 0;
+    newStreak = correct ? streak + 1 : 0;
+    scoreDelta = correct ? 10 : -3;
+  }
 
   // Update session
   await GameSession.findByIdAndUpdate(sessionId, {
@@ -38,7 +56,16 @@ export async function submitAnswer(params: {
       xp_earned: xpGained,
     },
     $max: { max_streak: newStreak },
-    $push: { answers: { question_id: questionId, selected, correct, time_taken_ms: timeTakenMs, xp_gained: xpGained } },
+    $push: {
+      answers: {
+        question_id: questionId,
+        selected,
+        correct,
+        time_taken_ms: timeTakenMs,
+        xp_gained: xpGained,
+        score: isEssay ? 0 : (correct ? 10 : 0) // Default score for MCQs
+      }
+    },
   });
 
   // Fetch user for level dynamics
@@ -78,7 +105,7 @@ export async function submitAnswer(params: {
       ...(direction === "down" ? { last_demotion_at: new Date() } : {}),
     },
     $max: { longest_streak: newStreak },
-    ...(!correct && subject ? { $addToSet: { weak_areas: subject } } : {}),
+    ...(!correct && !isEssay && subject ? { $addToSet: { weak_areas: subject } } : {}),
   });
 
   // Update quest progress
@@ -103,6 +130,7 @@ export async function endGameSession(params: {
   xpEarned: number;
   newBadges: string[];
   levelDirection: "up" | "down" | null;
+  answers: any[];
 }> {
   const session = await GameSession.findOneAndUpdate(
     { _id: params.sessionId, user_id: new mongoose.Types.ObjectId(params.userId), status: "active" },
@@ -111,21 +139,98 @@ export async function endGameSession(params: {
   );
   if (!session) throw new Error("Session not found or already finished");
 
-  const percentage = session.total_answers > 0
-    ? Math.round((session.correct_answers / session.total_answers) * 100) : 0;
+  // Identify all essay answers in the session.
+  const questionIds = session.answers.map(a => a.question_id);
+  const questions = await Question.find({ _id: { $in: questionIds } });
+  const questionMap = new Map(questions.map(q => [q._id.toString(), q]));
+
+  let essayXP = 0;
+  let essayScore = 0;
+  let essayCorrectCount = 0;
+  let maxPossibleScore = 0;
+  let totalPointsEarned = 0;
+
+  // Grade essays and calculate max possible score
+  for (const answer of session.answers) {
+    const question = questionMap.get(answer.question_id);
+    if (!question) continue;
+
+    if (question.type === "essay") {
+      maxPossibleScore += 100;
+      try {
+        const grade = await gradeEssay({
+          question: question.question,
+          modelAnswer: question.model_answer || "",
+          rubric: question.rubric || "",
+          userAnswer: answer.selected,
+        });
+
+        answer.score = grade.score;
+        answer.feedback = grade.feedback;
+        answer.strengths = grade.strengths;
+        answer.weaknesses = grade.weaknesses;
+        answer.correct = grade.score >= 50; // Pass threshold
+        answer.xp_gained = Math.round(grade.score / 2);
+
+        essayXP += answer.xp_gained;
+        essayScore += answer.score;
+        totalPointsEarned += answer.score;
+        if (answer.correct) essayCorrectCount++;
+      } catch (err) {
+        console.error(`Failed to grade essay for question ${answer.question_id}:`, err);
+        // On AI failure, we leave it as 0
+      }
+    } else {
+      maxPossibleScore += 10;
+      totalPointsEarned += answer.correct ? 10 : 0;
+    }
+  }
+
+  // Update session with essay results
+  session.score += essayScore;
+  session.xp_earned += essayXP;
+  session.correct_answers += essayCorrectCount;
+  
+  const percentage = maxPossibleScore > 0
+    ? Math.round((totalPointsEarned / maxPossibleScore) * 100) : 0;
   const grade = computeGrade(percentage);
+
+  session.percentage = percentage;
+  session.grade = grade;
+  
+  // Save the updated answers with grades
+  await session.save();
 
   let bonusXP = 0;
   if (percentage === 100) bonusXP = XP_SOURCES.perfect_round;
   if (bonusXP > 0) {
     await User.findByIdAndUpdate(params.userId, { $inc: { xp: bonusXP } });
-    await GameSession.findByIdAndUpdate(params.sessionId, { $inc: { xp_earned: bonusXP } });
+    session.xp_earned += bonusXP;
+    await session.save();
   }
-
-  await GameSession.findByIdAndUpdate(params.sessionId, { $set: { grade, percentage } });
 
   const newBadges = await checkAndAwardBadges(params.userId, { grade, streak: session.max_streak });
   updateLeaderboard(params.userId).catch(console.error);
+
+  // Identify weak areas from failed essays
+  const weakAreas: string[] = [];
+  for (const answer of session.answers) {
+    const question = questionMap.get(answer.question_id);
+    if (question?.type === "essay" && !answer.correct && question.subject) {
+      weakAreas.push(question.subject);
+    }
+  }
+
+  // Update user stats for essays (MCQ stats were already updated in submitAnswer)
+  if (essayXP > 0 || essayCorrectCount > 0 || weakAreas.length > 0) {
+    await User.findByIdAndUpdate(params.userId, { 
+      $inc: { 
+        xp: essayXP,
+        total_correct_answers: essayCorrectCount
+      },
+      ...(weakAreas.length > 0 ? { $addToSet: { weak_areas: { $each: weakAreas } } } : {})
+    });
+  }
 
   // Update battles_completed quest progress
   await Quest.updateMany(
@@ -139,19 +244,33 @@ export async function endGameSession(params: {
   );
 
   // Compute level direction from latest user state
-  const updatedUser = await User.findById(params.userId, "level").lean();
+  const updatedUser = await User.findById(params.userId, "level xp total_questions_answered").lean() as any;
   const finalLevel = updatedUser?.level ?? 1;
-  const sessionDoc = await GameSession.findById(params.sessionId, "xp_earned").lean();
-  const levelDirection: "up" | "down" | null =
-    finalLevel > (session.xp_earned > 0 ? 1 : 1) ? null : null; // computed below
-  void levelDirection; // suppress unused warning — we derive it properly:
-
+  
   // Compute by comparing level before vs after session
-  const xpBeforeSession = (updatedUser ? (updatedUser as { xp?: number }).xp ?? 0 : 0) - (sessionDoc?.xp_earned ?? 0) - bonusXP;
-  const levelBefore = computeLevel(Math.max(0, xpBeforeSession), Math.max(0, (updatedUser as { total_questions_answered?: number } | null)?.total_questions_answered ?? 0));
+  const totalXPGainedInSession = session.xp_earned;
+  const xpBeforeSession = (updatedUser?.xp ?? 0) - totalXPGainedInSession;
+  const levelBefore = computeLevel(Math.max(0, xpBeforeSession), Math.max(0, (updatedUser?.total_questions_answered ?? 0) - session.total_answers));
   const derivedDirection: "up" | "down" | null = finalLevel > levelBefore ? "up" : finalLevel < levelBefore ? "down" : null;
 
-  return { grade, percentage, xpEarned: session.xp_earned + bonusXP, newBadges, levelDirection: derivedDirection };
+  return {
+    grade,
+    percentage,
+    xpEarned: session.xp_earned,
+    newBadges,
+    levelDirection: derivedDirection,
+    answers: session.answers.map(a => ({
+      question_id: a.question_id,
+      selected: a.selected,
+      correct: a.correct,
+      time_taken_ms: a.time_taken_ms,
+      score: a.score,
+      feedback: a.feedback,
+      strengths: a.strengths,
+      weaknesses: a.weaknesses,
+      xp_gained: a.xp_gained,
+    }))
+  };
 }
 
 async function updateQuestProgress(userId: string, type: string, increment: number) {

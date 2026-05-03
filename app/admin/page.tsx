@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { adminApi, type PdfDocument, type AdminStats } from "@/lib/api/admin";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { cn } from "@/lib/utils";
@@ -49,12 +50,14 @@ export default function AdminPage() {
 
   // Past Questions import state
   const [pastJson,     setPastJson]     = useState("");
+  const [pastFile,     setPastFile]     = useState<File | null>(null);
   const [pastSubject,  setPastSubject]  = useState(SUBJECTS[0].id);
   const [pastYear,     setPastYear]     = useState(new Date().getFullYear());
   const [pastTrack,    setPastTrack]    = useState("law_school_track");
   const [pastDiff,     setPastDiff]     = useState("medium");
   const [importing,    setImporting]    = useState(false);
   const [importResult, setImportResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const pastFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogin = async () => {
     setAuthError("");
@@ -156,8 +159,15 @@ export default function AdminPage() {
           className="cyber-card p-8 w-full max-w-sm space-y-5"
         >
           <div className="text-center">
-            <span className="text-5xl">⚙️</span>
-            <h1 className="text-2xl font-bold gradient-text mt-2">Admin Portal</h1>
+            <div className="relative w-16 h-16 mx-auto mb-2">
+              <Image
+                src="/logo.png.png"
+                alt="Legal Ninja Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <h1 className="text-2xl font-bold gradient-text">Admin Portal</h1>
             <p className="text-gray-500 text-sm mt-1">Legal Ninja</p>
           </div>
           <div>
@@ -186,7 +196,14 @@ export default function AdminPage() {
       <div className="sticky top-0 z-40 border-b px-4 py-3 flex items-center justify-between"
            style={{ background: "var(--cyber-card-bg)", backdropFilter: "blur(16px)", borderColor: "var(--cyber-border)" }}>
         <div className="flex items-center gap-2">
-          <span className="text-xl">⚙️</span>
+          <div className="relative w-8 h-8">
+            <Image
+              src="/logo.png.png"
+              alt="Legal Ninja Logo"
+              fill
+              className="object-contain"
+            />
+          </div>
           <div>
             <h1 className="font-black text-sm uppercase tracking-widest neon-text-cyan">Admin Portal</h1>
             {stats && (
@@ -316,7 +333,7 @@ export default function AdminPage() {
               <div>
                 <h2 className="font-black text-sm uppercase tracking-widest" style={{ color: "var(--cyber-gold)" }}>Import Past Exam Questions</h2>
                 <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                  Paste a JSON array of questions below. Each question should have: <code>question</code>, <code>options</code> (A/B/C/D), <code>correct_option</code>. Optional: <code>explanation</code>, <code>topic</code>.
+                  Upload a <strong>Past Question PDF</strong> for AI extraction, or paste a JSON array.
                 </p>
               </div>
 
@@ -359,13 +376,50 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* PDF Picker for Past Questions */}
+              <div>
+                <label className="text-[10px] uppercase tracking-widest font-black block mb-2" style={{ color: "var(--text-muted)" }}>Option A: Upload PDF (Recommended)</label>
+                <div
+                  onClick={() => pastFileInputRef.current?.click()}
+                  className={cn(
+                    "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all",
+                    pastFile ? "border-cyber-gold bg-cyber-gold/5" : "border-cyber-border hover:border-cyber-gold/50 hover:bg-cyber-gold/5"
+                  )}
+                >
+                  <input ref={pastFileInputRef} type="file" accept=".pdf,application/pdf" className="hidden"
+                    onChange={(e) => {
+                      setPastFile(e.target.files?.[0] ?? null);
+                      if (e.target.files?.[0]) setPastJson("");
+                    }} />
+                  {pastFile ? (
+                    <div>
+                      <p className="text-cyber-gold font-bold text-sm">📄 {pastFile.name}</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{formatBytes(pastFile.size)}</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-2xl mb-1">📄</p>
+                      <p className="font-bold text-xs" style={{ color: "var(--text-base)" }}>Select Past Question PDF</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-cyber-border"></div></div>
+                <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-cyber-card-bg px-2 text-gray-500">OR</span></div>
+              </div>
+
               {/* JSON input */}
               <div>
-                <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Questions JSON Array</label>
+                <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Option B: Paste JSON Array</label>
                 <textarea
                   value={pastJson}
-                  onChange={(e) => setPastJson(e.target.value)}
-                  rows={12}
+                  onChange={(e) => {
+                    setPastJson(e.target.value);
+                    if (e.target.value.trim()) setPastFile(null);
+                  }}
+                  rows={6}
                   placeholder={`[\n  {\n    "question": "What is the doctrine of lis pendens?",\n    "options": {\n      "A": "A rule of evidence",\n      "B": "A doctrine affecting pending litigation",\n      "C": "A type of legal brief",\n      "D": "A court procedure"\n    },\n    "correct_option": "B",\n    "explanation": "Lis pendens means a pending suit...",\n    "topic": "Property transfers"\n  }\n]`}
                   className="w-full px-4 py-3 rounded-xl text-xs border font-mono focus:outline-none"
                   style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)", color: "var(--text-base)", resize: "vertical" }}
@@ -388,29 +442,36 @@ export default function AdminPage() {
                 )}
               </AnimatePresence>
 
-              <NeonButton variant="gold" fullWidth size="lg" disabled={!pastJson.trim() || importing}
+              <NeonButton variant="gold" fullWidth size="lg" disabled={(!pastJson.trim() && !pastFile) || importing}
                 onClick={async () => {
                   setImporting(true);
                   setImportResult(null);
                   try {
-                    const parsed = JSON.parse(pastJson);
-                    if (!Array.isArray(parsed)) throw new Error("Input must be a JSON array");
-                    const enriched = parsed.map((q: Record<string, unknown>) => ({
-                      ...q,
-                      subject: pastSubject,
-                      track: pastTrack,
-                      difficulty: pastDiff,
-                      year: pastYear,
-                    }));
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/admin/import-past-questions`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
-                      body: JSON.stringify({ questions: enriched, year: pastYear }),
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || "Import failed");
-                    setImportResult({ ok: true, message: `✅ Imported ${data.imported} past exam questions (${pastYear})` });
-                    setPastJson("");
+                    let res;
+                    if (pastFile) {
+                      res = await adminApi.importPastQuestions(adminKey, {
+                        file: pastFile,
+                        subject: pastSubject,
+                        track: pastTrack,
+                        year: pastYear,
+                      });
+                      setImportResult({ ok: true, message: `✅ PDF uploaded. AI is extracting questions for ${pastYear} in the background.` });
+                      setPastFile(null);
+                      if (pastFileInputRef.current) pastFileInputRef.current.value = "";
+                    } else {
+                      const parsed = JSON.parse(pastJson);
+                      if (!Array.isArray(parsed)) throw new Error("Input must be a JSON array");
+                      const enriched = parsed.map((q: any) => ({
+                        ...q,
+                        subject: pastSubject,
+                        track: pastTrack,
+                        difficulty: pastDiff,
+                        year: pastYear,
+                      }));
+                      res = await adminApi.importPastQuestions(adminKey, { questions: enriched, year: pastYear });
+                      setImportResult({ ok: true, message: `✅ Imported ${res.imported} past exam questions (${pastYear})` });
+                      setPastJson("");
+                    }
                     refreshBanks();
                   } catch (err) {
                     setImportResult({ ok: false, message: err instanceof Error ? err.message : "Import failed" });
@@ -419,7 +480,7 @@ export default function AdminPage() {
                   }
                 }}
               >
-                {importing ? "Importing…" : `📝 Import ${pastYear} Past Questions`}
+                {importing ? "Processing…" : pastFile ? "📤 Extract from PDF" : `📝 Import ${pastYear} JSON`}
               </NeonButton>
             </div>
           </motion.div>

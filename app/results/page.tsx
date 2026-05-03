@@ -338,6 +338,55 @@ function ResultsContent() {
         {/* Spaced Repetition Hint */}
         <SpacedRepetitionHint wrongSubjects={wrongSubjects} />
 
+        {/* Essay Feedback (Mock Exam only) */}
+        {game.mode === "exam_simulation" && game.answers.some(a => game.questions.find(q => q.id === a.question_id)?.type === "essay") && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="space-y-3"
+          >
+            <h3 className="text-xs font-black uppercase tracking-widest px-1" style={{ color: "var(--cyber-purple)" }}>
+              ⚖️ Essay Evaluations
+            </h3>
+            {game.answers.map((a, i) => {
+              const q = game.questions.find(q => q.id === a.question_id);
+              if (q?.type !== "essay") return null;
+              return (
+                <div key={a.question_id} className="cyber-card p-4 space-y-3 border-l-4" style={{ borderLeftColor: "var(--cyber-purple)" }}>
+                  <div className="flex justify-between items-start">
+                    <p className="text-xs font-bold leading-relaxed line-clamp-2 pr-4">{q.question}</p>
+                    <div className="text-right shrink-0">
+                      <p className="text-xl font-black font-mono" style={{ color: "var(--cyber-purple)" }}>{a.score ?? 0}</p>
+                      <p className="text-[9px] uppercase font-black" style={{ color: "var(--text-muted)" }}>Score</p>
+                    </div>
+                  </div>
+                  
+                  {a.feedback && (
+                    <div className="text-xs space-y-2 p-3 rounded-lg" style={{ background: "color-mix(in srgb, var(--cyber-purple) 6%, var(--cyber-card-bg))" }}>
+                      <p style={{ color: "var(--text-base)" }}><span className="font-bold">Examiner's Note:</span> {a.feedback}</p>
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                          <p className="text-[9px] font-black uppercase mb-1" style={{ color: "var(--cyber-green)" }}>Strengths</p>
+                          <ul className="list-disc list-inside space-y-1 opacity-80">
+                            {a.strengths?.map((s, idx) => <li key={idx}>{s}</li>)}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black uppercase mb-1" style={{ color: "var(--cyber-red)" }}>Weaknesses</p>
+                          <ul className="list-disc list-inside space-y-1 opacity-80">
+                            {a.weaknesses?.map((w, idx) => <li key={idx}>{w}</li>)}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+
         {/* Session Breakdown */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

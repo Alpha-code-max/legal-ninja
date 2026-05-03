@@ -20,14 +20,18 @@ const BADGE_LABELS: Record<string, string> = {
 
 export default function Results() {
   const { colors } = useTheme();
-  const params     = useLocalSearchParams<{ grade: string; percentage: string; xpEarned: string; levelDirection: string; newBadges: string; answersJson: string }>();
+  const params     = useLocalSearchParams<{ grade: string; percentage: string; xpEarned: string; levelDirection: string; newBadges: string; answersJson: string; session_id: string }>();
   const grade      = params.grade ?? "F";
   const pct        = Number(params.percentage ?? 0);
   const xp         = Number(params.xpEarned ?? 0);
   const direction  = params.levelDirection === "up" ? "up" : params.levelDirection === "down" ? "down" : null;
   const newBadges  = JSON.parse(params.newBadges ?? "[]") as string[];
-  const answers    = JSON.parse(params.answersJson ?? "[]") as { question_id: string; selected: string; correct_option: string }[];
+  const answers    = JSON.parse(params.answersJson ?? "[]") as Array<{
+    question_id: string; selected: string; correct_option: string;
+    score?: number; feedback?: string; strengths?: string[]; weaknesses?: string[];
+  }>;
   const wrong      = answers.filter((a) => a.selected !== a.correct_option);
+  const essayAnswers = answers.filter(a => a.score !== undefined);
   const cfg        = GRADE_CONFIG[grade] ?? GRADE_CONFIG["F"];
 
   return (
@@ -74,6 +78,53 @@ export default function Results() {
         </FadeIn>
       )}
 
+      {/* Essay Evaluations */}
+      {essayAnswers.length > 0 && (
+        <FadeIn duration={450}>
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ color: "#C026D3", fontSize: 12, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12, marginLeft: 4 }}>
+              ⚖️ Essay Evaluations
+            </Text>
+            {essayAnswers.map((a, idx) => (
+              <CyberCard key={idx} accent="purple" style={{ marginBottom: 12 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
+                  <Text style={{ color: colors.text, fontSize: 13, fontFamily: "SpaceGrotesk_700Bold", flex: 1, marginRight: 8 }}>
+                    Essay Question
+                  </Text>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={{ color: "#C026D3", fontSize: 24, fontFamily: "SpaceMono_700Bold" }}>{a.score}</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 8, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase" }}>Score</Text>
+                  </View>
+                </View>
+
+                {a.feedback && (
+                  <View style={{ backgroundColor: colors.isDark ? "rgba(192,38,211,0.05)" : "rgba(192,38,211,0.1)", borderRadius: 12, padding: 12 }}>
+                    <Text style={{ color: colors.text, fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", lineHeight: 18 }}>
+                      <Text style={{ fontFamily: "SpaceGrotesk_700Bold" }}>Feedback: </Text>{a.feedback}
+                    </Text>
+                    
+                    <View style={{ flexDirection: "row", gap: 16, marginTop: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: "#22FF88", fontSize: 9, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase", marginBottom: 4 }}>Strengths</Text>
+                        {a.strengths?.map((s, sidx) => (
+                          <Text key={sidx} style={{ color: colors.textMuted, fontSize: 10, fontFamily: "SpaceGrotesk_400Regular" }}>• {s}</Text>
+                        ))}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: "#FF2D55", fontSize: 9, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase", marginBottom: 4 }}>Weaknesses</Text>
+                        {a.weaknesses?.map((w, widx) => (
+                          <Text key={widx} style={{ color: colors.textMuted, fontSize: 10, fontFamily: "SpaceGrotesk_400Regular" }}>• {w}</Text>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </CyberCard>
+            ))}
+          </View>
+        </FadeIn>
+      )}
+
       <FadeIn duration={350}>
         <CyberCard style={{ marginBottom: 24 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
@@ -90,7 +141,7 @@ export default function Results() {
       </FadeIn>
 
       <View style={{ gap: 10 }}>
-        {wrong.length > 0 && <NeonButton label="📖 Review Wrong Answers" onPress={() => router.push({ pathname: "/quiz/review", params: { answersJson: params.answersJson } })} variant="purple" fullWidth />}
+        {wrong.length > 0 && <NeonButton label="📖 Review Wrong Answers" onPress={() => router.push({ pathname: "/quiz/review", params: { answersJson: params.answersJson, session_id: params.session_id } })} variant="purple" fullWidth />}
         <NeonButton label="🔄 Play Again"  onPress={() => router.replace("/quiz/setup")} fullWidth />
         <NeonButton label="📤 Share Score" onPress={() => Share.share({ message: `I scored ${pct}% (${grade}) on Legal Ninja! 🥷⚖️ Can you beat me? #LegalNinja` })} variant="ghost" fullWidth />
         <NeonButton label="🏠 Home"        onPress={() => router.replace("/(tabs)")} variant="ghost" fullWidth />

@@ -4,15 +4,17 @@ const pdfParse = require("pdf-parse") as (buffer: Buffer) => Promise<{ text: str
 import { PdfDocument } from "../models/PdfDocument";
 import { PdfChunk, type IPdfChunk } from "../models/PdfChunk";
 import { Question } from "../models/Question";
-import { generateQuestion as aiGenerate, questionPassesStrictCheck } from "./ai";
+import { generateQuestion as aiGenerate, questionPassesStrictCheck, extractQuestionsFromText } from "./ai";
 import mongoose from "mongoose";
 
 const DIFFICULTIES = ["easy", "medium", "hard", "expert"] as const;
-const QUESTIONS_PER_CHUNK = 3;
+const QUESTIONS_PER_CHUNK = 1; // Reduced from 3 to minimize tokens
 const CONCURRENCY = 3; // parallel AI calls per batch
 
 const CHUNK_SIZE = 600;
 const CHUNK_MIN  = 80;
+
+type DocClassification = "mcq_only" | "essay_only" | "mixed";
 
 function cleanText(raw: string): string {
   return raw
@@ -40,6 +42,16 @@ function chunkText(text: string): string[] {
   return chunks;
 }
 
+function classifyDocument(text: string): DocClassification {
+  // Detect if document has existing essays (problem questions, case studies) to extract
+  const hasEssayMarkers = /problem question|case study|discuss|advise|critically analyse|section \d+\.|[Q|q]uestion \d+:/i.test(text);
+  const hasMCQMarkers = /\b[Aa]\)|\bOption [A-D]:|^\s*[A-D]\./m.test(text);
+
+  if (hasEssayMarkers && !hasMCQMarkers) return "essay_only";
+  if (hasMCQMarkers && hasEssayMarkers) return "mixed";
+  return "mcq_only";
+}
+
 export async function extractAndStoreChunks(params: {
   filePath: string;
   originalName: string;
@@ -58,8 +70,10 @@ export async function extractAndStoreChunks(params: {
     fs.unlink(filePath, () => {});
   }
 
-  const chunks = chunkText(cleanText(parsed.text));
+  const cleanedText = cleanText(parsed.text);
+  const chunks = chunkText(cleanedText);
   const pageCount = parsed.numpages;
+  const docType = classifyDocument(cleanedText);
 
   const doc = await PdfDocument.create({
     original_name: originalName,
@@ -68,6 +82,7 @@ export async function extractAndStoreChunks(params: {
     chunk_count: chunks.length,
     file_size_bytes: stat.size,
     uploaded_by: uploadedBy ?? null,
+    doc_type: docType,
   });
 
   const chunkDocs = chunks.map((content, i) => ({
@@ -121,10 +136,48 @@ export async function populateQuestionBankFromPdf(params: {
   const { documentId, subject, track } = params;
   const docObjectId = new mongoose.Types.ObjectId(documentId);
 
+  // Get document to check its type
+  const doc = await PdfDocument.findById(docObjectId).lean();
+  if (!doc) return { generated: 0, failed: 0 };
+
   const chunks = await PdfChunk.find({ document_id: docObjectId }).lean();
   let generated = 0;
   let failed = 0;
 
+  // For essay_only documents, extract existing essays (don't generate)
+  if (doc.doc_type === "essay_only") {
+    console.log(`[Bank] Document classified as essay_only - extracting existing essays (no AI generation)`);
+    const result = await extractPastQuestionsFromPdf({ documentId, subject, track });
+    return { generated: result.extracted, failed: result.failed };
+  }
+
+  // For mixed documents: generate MCQs AND extract existing essays
+  if (doc.doc_type === "mixed") {
+    console.log(`[Bank] Document classified as mixed - generating MCQs and extracting essays`);
+    const [mcqResult, essayResult] = await Promise.all([
+      (async () => {
+        let mcqGenerated = 0, mcqFailed = 0;
+        for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+          const batch = chunks.slice(i, i + CONCURRENCY);
+          await Promise.all(batch.map(async (chunk) => {
+            try {
+              const aiQ = await aiGenerate({ subject, track, difficulty: "medium", pdfContext: chunk.content, type: "mcq" });
+              const fullText = [aiQ.question, aiQ.options?.A, aiQ.options?.B, aiQ.options?.C, aiQ.options?.D, aiQ.explanation ?? "", aiQ.topic ?? ""].join(" ");
+              if (!questionPassesStrictCheck(fullText, subject, true)) { mcqFailed++; return; }
+              if (await Question.exists({ subject, question: aiQ.question })) { mcqFailed++; return; }
+              await Question.create({ subject, track, difficulty: "medium", type: "mcq", question: aiQ.question, options: aiQ.options, correct_option: aiQ.correct_option, explanation: aiQ.explanation, topic: aiQ.topic, source: "ai", source_document_id: docObjectId, used_count: 0, approved: true, validated: true, allowed_roles: ["law_student"] });
+              mcqGenerated++;
+            } catch (err) { console.error(`[Bank] MCQ generation failed:`, err); mcqFailed++; }
+          }));
+        }
+        return { generated: mcqGenerated, failed: mcqFailed };
+      })(),
+      extractPastQuestionsFromPdf({ documentId, subject, track })
+    ]);
+    return { generated: mcqResult.generated + essayResult.extracted, failed: mcqResult.failed + essayResult.failed };
+  }
+
+  // MCQ_ONLY: Generate MCQs only
   // Process chunks in parallel batches
   for (let i = 0; i < chunks.length; i += CONCURRENCY) {
     const batch = chunks.slice(i, i + CONCURRENCY);
@@ -132,39 +185,50 @@ export async function populateQuestionBankFromPdf(params: {
     await Promise.all(batch.map(async (chunk) => {
       for (let q = 0; q < QUESTIONS_PER_CHUNK; q++) {
         const difficulty = DIFFICULTIES[(generated + q) % DIFFICULTIES.length];
+
         try {
           const aiQ = await aiGenerate({
             subject, track,
             difficulty,
             pdfContext: chunk.content,
+            type: "mcq",
           });
 
-          // Build combined text so the positive keyword check has maximum surface area
+          // Build combined text for subject validation
           const fullText = [
             aiQ.question,
-            aiQ.options.A, aiQ.options.B, aiQ.options.C, aiQ.options.D,
+            aiQ.options?.A ?? "",
+            aiQ.options?.B ?? "",
+            aiQ.options?.C ?? "",
+            aiQ.options?.D ?? "",
             aiQ.explanation ?? "",
             aiQ.topic ?? "",
           ].join(" ");
 
-          if (!questionPassesStrictCheck(fullText, subject)) {
-            console.warn(`[Bank] Rejected off-subject question for ${subject} (chunk ${chunk.chunk_index}, q${q})`);
+          // Lenient check for PDF-sourced questions — only reject if it bleeds into another subject
+          if (!questionPassesStrictCheck(fullText, subject, true)) {
+            console.warn(`[Bank] Rejected cross-subject question for ${subject} (chunk ${chunk.chunk_index}, q${q})`);
             failed++;
-            continue; // skip only this question — keep generating remaining ones for this chunk
+            continue;
           }
 
           const exists = await Question.exists({ subject, question: aiQ.question });
-          if (exists) { failed++; continue; } // duplicate — skip, keep going
+          if (exists) { failed++; continue; }
 
           await Question.create({
             subject, track, difficulty,
-            question:           aiQ.question,
-            options:            aiQ.options,
-            correct_option:     aiQ.correct_option,
-            explanation:        aiQ.explanation,
-            topic:              aiQ.topic,
+            type: "mcq",
+            question: aiQ.question,
+            options: aiQ.options,
+            correct_option: aiQ.correct_option,
+            explanation: aiQ.explanation,
+            topic: aiQ.topic,
+            source: "ai",
             source_document_id: docObjectId,
-            used_count:         0,
+            used_count: 0,
+            approved: true,
+            validated: true,
+            allowed_roles: ["law_student"],
           });
           generated++;
         } catch (err) {
@@ -177,6 +241,56 @@ export async function populateQuestionBankFromPdf(params: {
 
   console.log(`[Bank] ${subject}: +${generated} questions (${failed} failed) from doc ${documentId}`);
   return { generated, failed };
+}
+
+export async function extractPastQuestionsFromPdf(params: {
+  documentId: string;
+  subject: string;
+  track: string;
+  year?: number;
+}): Promise<{ extracted: number; failed: number }> {
+  const { documentId, subject, track, year } = params;
+  const docObjectId = new mongoose.Types.ObjectId(documentId);
+
+  const chunks = await PdfChunk.find({ document_id: docObjectId }).lean();
+  let extracted = 0;
+  let failed = 0;
+
+  for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+    const batch = chunks.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async (chunk) => {
+      try {
+        const questions = await extractQuestionsFromText({
+          text: chunk.content,
+          subject, track,
+        });
+
+        for (const q of questions) {
+          const fullText = [q.question, q.options?.A ?? "", q.options?.B ?? "", q.options?.C ?? "", q.options?.D ?? "", q.explanation ?? "", q.topic ?? ""].join(" ");
+          if (!questionPassesStrictCheck(fullText, subject, true)) {
+            failed++; continue;
+          }
+
+          const exists = await Question.exists({ subject, question: q.question });
+          if (exists) { failed++; continue; }
+
+          await Question.create({
+            ...q,
+            source: "past",
+            year: year ?? undefined,
+            source_document_id: docObjectId,
+            approved: true,
+            validated: true,
+          });
+          extracted++;
+        }
+      } catch (err) {
+        console.error(`[Extract] Failed on chunk ${chunk.chunk_index}:`, err);
+        failed++;
+      }
+    }));
+  }
+  return { extracted, failed };
 }
 
 // ─── Bank stats per subject ───────────────────────────────────────────────────

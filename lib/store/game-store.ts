@@ -4,9 +4,12 @@ import type { TrackId } from "@/lib/config/tracks";
 
 export interface Question {
   id: string;
+  type?: "mcq" | "essay";
   question: string;
   options: { A: string; B: string; C: string; D: string };
   correct_option: "A" | "B" | "C" | "D";
+  model_answer?: string;
+  rubric?: string;
   difficulty: Difficulty;
   subject: string;
   topic: string;
@@ -14,7 +17,7 @@ export interface Question {
 }
 
 export interface GameSession {
-  mode: GameModeId;
+  mode: GameModeId | "exam_simulation";
   track: TrackId;
   subject: string;
   difficulty: Difficulty;
@@ -22,7 +25,16 @@ export interface GameSession {
   question_count: number;
   questions: Question[];
   current_index: number;
-  answers: Array<{ question_id: string; selected: string; correct: boolean; time_taken_ms: number }>;
+  answers: Array<{
+    question_id: string;
+    selected: string;
+    correct: boolean;
+    time_taken_ms: number;
+    score?: number;
+    feedback?: string;
+    strengths?: string[];
+    weaknesses?: string[];
+  }>;
   score: number;
   streak: number;
   xp_earned: number;
@@ -37,7 +49,7 @@ interface GameActions {
   startSession: (config: Omit<GameSession, "questions" | "current_index" | "answers" | "score" | "streak" | "xp_earned" | "started_at" | "ended_at" | "status" | "level_direction" | "new_badges">) => void;
   setQuestions: (questions: Question[]) => void;
   submitAnswer: (selected: string, time_taken_ms: number) => { correct: boolean; xp_gained: number };
-  endSession: (result?: { levelDirection?: "up" | "down" | null; newBadges?: string[] }) => void;
+  endSession: (result?: { levelDirection?: "up" | "down" | null; newBadges?: string[]; answers?: Array<{question_id: string; selected: string; correct: boolean; time_taken_ms: number; score?: number; feedback?: string; strengths?: string[]; weaknesses?: string[]; xp_gained: number}> }) => void;
   resetSession: () => void;
   setQuestionExplanation: (question_id: string, explanation: string) => void;
   setQuestionCorrectOption: (question_id: string, correct_option: string) => void;
@@ -76,10 +88,13 @@ export const useGameStore = create<GameSession & GameActions>()((set, get) => ({
     const question = s.questions[s.current_index];
     if (!question) return { correct: false, xp_gained: 0 };
 
-    const correct = selected === question.correct_option;
-    const basePoints = correct ? 10 : -3;
-    const streakBonus = correct ? s.streak * 2 : 0;
-    const speedBonus = correct ? Math.round(8 * Math.max(0, 1 - time_taken_ms / 30000)) : 0;
+    const isEssay = question.type === "essay";
+    const correct = isEssay ? true : selected === question.correct_option; // Essay "correct" is determined by AI at end
+    
+    // For Essays, we don't calculate XP/Score immediately on client
+    const basePoints = isEssay ? 0 : (correct ? 10 : -3);
+    const streakBonus = (!isEssay && correct) ? s.streak * 2 : 0;
+    const speedBonus = (!isEssay && correct) ? Math.round(8 * Math.max(0, 1 - time_taken_ms / 30000)) : 0;
     const xp_gained = Math.max(0, basePoints + streakBonus + speedBonus);
 
     set((prev) => ({
@@ -87,8 +102,8 @@ export const useGameStore = create<GameSession & GameActions>()((set, get) => ({
         ...prev.answers,
         { question_id: question.id, selected, correct, time_taken_ms },
       ],
-      score: prev.score + (correct ? basePoints : basePoints),
-      streak: correct ? prev.streak + 1 : 0,
+      score: prev.score + basePoints,
+      streak: isEssay ? prev.streak : (correct ? prev.streak + 1 : 0),
       xp_earned: prev.xp_earned + xp_gained,
       current_index: prev.current_index + 1,
     }));
@@ -96,7 +111,7 @@ export const useGameStore = create<GameSession & GameActions>()((set, get) => ({
     return { correct, xp_gained };
   },
 
-  endSession: (result?) => set({ ended_at: Date.now(), status: "finished", level_direction: result?.levelDirection ?? null, new_badges: result?.newBadges ?? [] }),
+  endSession: (result?) => set({ ended_at: Date.now(), status: "finished", level_direction: result?.levelDirection ?? null, new_badges: result?.newBadges ?? [], answers: result?.answers ?? get().answers }),
 
   resetSession: () => set(DEFAULT_SESSION),
 

@@ -5,10 +5,13 @@ export interface IQuestion extends Document {
   subject: string;
   track: string;
   difficulty: string;
+  type: "mcq" | "essay";
   question: string;
   options: { A: string; B: string; C: string; D: string };
   correct_option: "A" | "B" | "C" | "D";
   explanation: string | null;
+  model_answer?: string;
+  rubric?: string;
   topic: string | null;
   used_count: number;
   source_document_id: mongoose.Types.ObjectId | null;
@@ -27,10 +30,13 @@ const QuestionSchema = new Schema<IQuestion>(
     subject:        { type: String, required: true, index: true },
     track:          { type: String, required: true, index: true },
     difficulty:     { type: String, required: true, index: true },
+    type:           { type: String, enum: ["mcq", "essay"], default: "mcq", index: true },
     question:       { type: String, required: true },
     options:        { A: String, B: String, C: String, D: String },
-    correct_option: { type: String, enum: ["A", "B", "C", "D"], required: true },
+    correct_option: { type: String, enum: ["A", "B", "C", "D"] },
     explanation:    { type: String, default: null },
+    model_answer:   { type: String, default: null },
+    rubric:         { type: String, default: null },
     topic:          { type: String, default: null },
     used_count:          { type: Number, default: 0 },
     source_document_id:  { type: Schema.Types.ObjectId, ref: "PdfDocument", default: null, index: true },

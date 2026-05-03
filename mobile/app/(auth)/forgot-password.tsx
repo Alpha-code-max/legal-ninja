@@ -1,6 +1,6 @@
 import { FadeIn } from '@components/ui/FadeIn';
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Image } from "react-native";
 import { router } from "expo-router";
 import { NeonButton } from "@components/ui/NeonButton";
 import { api } from "@lib/api";
@@ -49,8 +49,15 @@ export default function ForgotPassword() {
           </View>
         ) : (
           <>
-            <Text style={{ fontSize: 24, fontFamily: "SpaceGrotesk_700Bold", color: colors.text, marginBottom: 8 }}>Reset Password</Text>
-            <Text style={{ fontSize: 13, color: colors.textMuted, fontFamily: "SpaceGrotesk_400Regular", marginBottom: 24 }}>Enter your email and we'll send a reset link.</Text>
+            <View style={{ alignItems: "center", marginBottom: 24 }}>
+              <Image 
+                source={require("@/assets/logo.png")} 
+                style={{ width: 100, height: 100, marginBottom: 16 }} 
+                resizeMode="contain" 
+              />
+              <Text style={{ fontSize: 24, fontFamily: "SpaceGrotesk_700Bold", color: colors.text, marginBottom: 8 }}>Reset Password</Text>
+              <Text style={{ fontSize: 13, color: colors.textMuted, fontFamily: "SpaceGrotesk_400Regular", textAlign: "center" }}>Enter your email and we'll send a reset link.</Text>
+            </View>
 
             {!!error && (
               <View style={{ backgroundColor: "rgba(255,45,85,0.1)", borderWidth: 1, borderColor: "rgba(255,45,85,0.4)", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 }}>

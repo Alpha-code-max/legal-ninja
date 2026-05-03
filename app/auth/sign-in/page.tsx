@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { api, setToken } from "@/lib/api/client";
 import { useUserStore } from "@/lib/store/user-store";
 import { useGuestStore } from "@/lib/store/guest-store";
@@ -61,11 +62,18 @@ export default function SignInPage() {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 22 }}
-        className="cyber-card p-8 w-full max-w-md space-y-6"
+        className="cyber-card p-8 w-full max-md space-y-6"
       >
         {/* Logo */}
         <div className="text-center space-y-1">
-          <div className="text-4xl">⚔️</div>
+          <div className="relative w-16 h-16 mx-auto mb-2">
+            <Image
+              src="/logo.png.png"
+              alt="Legal Ninja Logo"
+              fill
+              className="object-contain"
+            />
+          </div>
           <h1 className="text-2xl font-black gradient-text">Sign In</h1>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             Back in the dojo, ninja.

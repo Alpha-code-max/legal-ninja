@@ -1,4 +1,4 @@
-export type ThemeId = "cyber_dark" | "light";
+export type ThemeId = "cyber_dark" | "light" | "moonlight";
 
 export interface AppColors {
   bg:           string;
@@ -49,5 +49,21 @@ export const themes: Record<ThemeId, AppColors> = {
     tabInactive: "rgba(13,27,42,0.4)",
     statusBar:   "dark",
     isDark:      false,
+  },
+  moonlight: {
+    bg:          "#0F1419",
+    bgAlt:       "#1A202C",
+    card:        "#1E293B",
+    inputBg:     "rgba(30,41,59,0.95)",
+    text:        "#E8EDF5",
+    textMuted:   "rgba(232,237,245,0.48)",
+    textFaint:   "rgba(232,237,245,0.28)",
+    border:      "rgba(71,85,105,0.6)",
+    borderFaint: "rgba(71,85,105,0.35)",
+    tabBg:       "#1A202C",
+    tabBorder:   "rgba(148,163,184,0.15)",
+    tabInactive: "rgba(232,237,245,0.38)",
+    statusBar:   "light",
+    isDark:      true,
   },
 };

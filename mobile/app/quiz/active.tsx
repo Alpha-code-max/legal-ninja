@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { View, Text, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { QuestionCard } from "@components/game/QuestionCard";
+import { EssayQuestionCard } from "@components/game/EssayQuestionCard";
 import { TimerRing } from "@components/ui/TimerRing";
 import { StreakCounter } from "@components/ui/StreakCounter";
 import { api } from "@lib/api";
@@ -11,6 +12,7 @@ import { useHaptics } from "@hooks/useHaptics";
 
 interface Question {
   id: string; question: string; subject: string; difficulty: string;
+  type?: "mcq" | "essay";
   options: { A: string; B: string; C: string; D: string };
   correct_option?: "A" | "B" | "C" | "D";
   explanation?: string;
@@ -42,6 +44,8 @@ function toServerMode(mode: string): ServerMode {
     daily_challenge:"daily_challenge",
     duel:           "duel",
     battle_royale:  "battle_royale",
+    mock_exam:      "exam_simulation",
+    exam_simulation:"exam_simulation",
   };
   return map[mode] ?? "solo_practice";
 }
@@ -66,6 +70,7 @@ export default function ActiveQuiz() {
   const [waiting,   setWaiting]   = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [timerKey,  setTimerKey]  = useState(0);
+  const [feedbackCountdown, setFeedbackCountdown] = useState<number | null>(null);
 
   const guestRef = useRef(false);
   const trackRef = useRef<ServerTrack>("law_school_track");
@@ -80,6 +85,7 @@ export default function ActiveQuiz() {
         track:      trackRef.current,
         difficulty: toServerDifficulty(diff),
         source,
+        mode:       toServerMode(mode),
         ...(year ? { year } : {}),
       };
       const res = guestRef.current
@@ -134,62 +140,80 @@ export default function ActiveQuiz() {
   }, []);
 
   const handleAnswer = async (selected: string, timeTakenMs: number) => {
-    if (!question) return;
+    if (!question || feedbackCountdown !== null) return;
 
-    let correct_option: string;
+    const isEssay = question.type === "essay";
+    let correct_option: string = "";
     let explanation: string | undefined;
 
-    try {
-      const reveal = guestRef.current
-        ? await api.guestRevealAnswer(question.id)
-        : await api.revealAnswer(question.id);
-      correct_option = reveal.correct_option;
-      explanation    = reveal.explanation ?? undefined;
-    } catch (e: any) {
-      Alert.alert("Connection error", "Could not load the answer. Check your connection.", [
-        { text: "Quit", onPress: () => router.canGoBack() ? router.back() : router.replace("/(tabs)") },
-      ]);
-      return;
+    if (!isEssay) {
+      try {
+        const reveal = guestRef.current
+          ? await api.guestRevealAnswer(question.id)
+          : await api.revealAnswer(question.id);
+        correct_option = reveal.correct_option;
+        explanation    = reveal.explanation ?? undefined;
+      } catch (e: any) {
+        Alert.alert("Connection error", "Could not load the answer. Check your connection.", [
+          { text: "Quit", onPress: () => router.canGoBack() ? router.back() : router.replace("/(tabs)") },
+        ]);
+        return;
+      }
     }
 
     const updated: Question = { ...question, correct_option: correct_option as any, explanation };
     setQuestion(updated);
 
-    const isCorrect = selected === correct_option;
+    const isCorrect = isEssay ? true : selected === correct_option;
     if (isCorrect) { haptics.success(); setStreak((s) => s + 1); }
     else           { haptics.error();  setStreak(0); }
 
-    answers.current.push({ question_id: question.id, selected, correct_option, time_taken_ms: timeTakenMs });
+    answers.current.push({ question_id: question.id, selected, correct_option: isEssay ? selected : correct_option, time_taken_ms: timeTakenMs });
 
-    // Only submit non-timeout answers — server rejects "__timeout__"
-    const isTimeout = selected === "__timeout__";
-    if (!guestRef.current && sessionId && !isTimeout) {
+    if (!guestRef.current && sessionId && selected !== "__timeout__") {
       api.submitAnswer({
         session_id:     sessionId,
         question_id:    question.id,
-        selected:       selected as "A" | "B" | "C" | "D",
-        correct_option: correct_option as "A" | "B" | "C" | "D",
+        selected:       selected as any,
+        correct_option: (isEssay ? selected : correct_option) as any,
         time_taken_ms:  timeTakenMs,
         streak,
       }).catch(() => {});
     }
 
-    // Show the correct/wrong result on the QuestionCard for 1.5s
-    // before transitioning to the next question.
-    // NOTE: Do NOT call setWaiting(true) here — React 18 would batch it
-    // with setQuestion(updated) above and hide the card before the user
-    // sees the ✅/❌ feedback.
-    setTimeout(async () => {
-      setWaiting(true);
-      if (qNumber >= total) {
-        await finishSession();
-      } else {
-        setQNumber((n) => n + 1);
-        await fetchNext();
-        setWaiting(false);
-      }
-    }, 1500);
+    if (isEssay) {
+      goToNext();
+      return;
+    }
+
+    if (isCorrect) {
+      setTimeout(goToNext, 1500);
+    } else {
+      setFeedbackCountdown(20);
+    }
   };
+
+  const goToNext = async () => {
+    setFeedbackCountdown(null);
+    setWaiting(true);
+    if (qNumber >= total) {
+      await finishSession();
+    } else {
+      setQNumber((n) => n + 1);
+      await fetchNext();
+      setWaiting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (feedbackCountdown === null) return;
+    if (feedbackCountdown <= 0) {
+      goToNext();
+      return;
+    }
+    const timer = setTimeout(() => setFeedbackCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+    return () => clearTimeout(timer);
+  }, [feedbackCountdown]);
 
   const finishSession = async () => {
     setFinishing(true);
@@ -220,6 +244,7 @@ export default function ActiveQuiz() {
         levelDirection: result.levelDirection ?? "null",
         newBadges:      JSON.stringify(result.newBadges),
         answersJson:    JSON.stringify(answers.current),
+        session_id:     sessionId ?? "",
       },
     });
   };
@@ -252,7 +277,7 @@ export default function ActiveQuiz() {
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <View style={{ flexDirection: "row", gap: 4 }}>
-            {Array.from({ length: Math.min(total, 10) }).map((_, i) => (
+            {Array.from({ length: total }).map((_, i) => (
               <View key={i} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: i < qNumber - 1 ? "#22FF88" : i === qNumber - 1 ? "#00F5FF" : "rgba(26,45,66,0.7)" }} />
             ))}
           </View>
@@ -278,14 +303,56 @@ export default function ActiveQuiz() {
             )}
           </View>
         ) : question ? (
-          <FadeIn>
-            <QuestionCard
-              question={question}
-              questionNumber={qNumber}
-              total={total}
-              onAnswer={handleAnswer}
-              isGuest={guestRef.current}
-            />
+          <FadeIn style={{ flex: 1 }}>
+            {question.type === "essay" ? (
+              <EssayQuestionCard
+                key={question.id}
+                question={question}
+                questionNumber={qNumber}
+                total={total}
+                onAnswer={handleAnswer}
+                disabled={waiting}
+              />
+            ) : (
+              <QuestionCard
+                question={question}
+                questionNumber={qNumber}
+                total={total}
+                onAnswer={handleAnswer}
+                isGuest={guestRef.current}
+              />
+            )}
+            
+            {/* Feedback Footer for MCQs */}
+            {feedbackCountdown !== null && (
+              <FadeIn duration={300} style={{ position: "absolute", bottom: 20, left: 0, right: 0, alignItems: "center" }}>
+                <TouchableOpacity
+                  onPress={goToNext}
+                  activeOpacity={0.8}
+                  style={{
+                    backgroundColor: "#00F5FF",
+                    paddingHorizontal: 24,
+                    paddingVertical: 12,
+                    borderRadius: 24,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    shadowColor: "#00F5FF",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 4,
+                  }}
+                >
+                  <Text style={{ color: "#000", fontSize: 14, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase" }}>
+                    Next Question
+                  </Text>
+                  <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "rgba(0,0,0,0.1)", alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ color: "#000", fontSize: 10, fontFamily: "SpaceMono_700Bold" }}>{feedbackCountdown}</Text>
+                  </View>
+                </TouchableOpacity>
+              </FadeIn>
+            )}
           </FadeIn>
         ) : null}
       </View>

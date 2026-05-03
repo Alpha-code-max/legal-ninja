@@ -1,6 +1,6 @@
 import { FadeIn } from '@components/ui/FadeIn';
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from "react-native";
 import { router } from "expo-router";
 import { NeonButton } from "@components/ui/NeonButton";
 import { api } from "@lib/api";
@@ -57,12 +57,19 @@ export default function SignUp() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24 }} keyboardShouldPersistTaps="handled">
         <FadeIn duration={400}>
-          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace("/(auth)/sign-in")} style={{ marginBottom: 24 }}>
+          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace("/(auth)/sign-in")} style={{ marginBottom: 16 }}>
             <Text style={{ color: "#00F5FF", fontSize: 14, fontFamily: "SpaceGrotesk_400Regular" }}>← Back</Text>
           </TouchableOpacity>
 
-          <Text style={{ fontSize: 24, fontFamily: "SpaceGrotesk_700Bold", color: colors.text, marginBottom: 6 }}>Create Account</Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, fontFamily: "SpaceGrotesk_400Regular", marginBottom: 20 }}>Join thousands of Nigerian law students</Text>
+          <View style={{ alignItems: "center", marginBottom: 20 }}>
+            <Image 
+              source={require("@/assets/logo.png")} 
+              style={{ width: 80, height: 80, marginBottom: 8 }} 
+              resizeMode="contain" 
+            />
+            <Text style={{ fontSize: 24, fontFamily: "SpaceGrotesk_700Bold", color: colors.text, marginBottom: 4 }}>Create Account</Text>
+            <Text style={{ fontSize: 13, color: colors.textMuted, fontFamily: "SpaceGrotesk_400Regular" }}>Join thousands of Nigerian law students</Text>
+          </View>
 
           {!!error && (
             <View style={{ backgroundColor: "rgba(255,45,85,0.1)", borderWidth: 1, borderColor: "rgba(255,45,85,0.4)", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 }}>

@@ -9,8 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        exo:  ['"Exo 2"', "sans-serif"],
-        mono: ['"Space Mono"', "monospace"],
+        display:  ['"Cabinet Grotesk"', "sans-serif"], // Playful headings
+        body:     ['"Bricolage Grotesque"', "sans-serif"], // Smooth body text
+        exo:      ['"Exo 2"', "sans-serif"], // Legacy fallback
+        mono:     ['"Space Mono"', "monospace"],
       },
       colors: {
         cyber: {

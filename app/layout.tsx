@@ -12,6 +12,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Preload fonts to prevent hydration shifts */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
         {/* Anti-flash theme script — runs before React hydrates */}
         <script
           dangerouslySetInnerHTML={{
@@ -19,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="bg-cyber-bg min-h-screen font-exo antialiased relative">
+      <body className="bg-cyber-bg min-h-screen antialiased relative" suppressHydrationWarning>
         {/* Persistent atmospheric background */}
         <div className="fixed inset-0 pointer-events-none z-[-1]">
           <div className="absolute inset-0 bg-noise" />

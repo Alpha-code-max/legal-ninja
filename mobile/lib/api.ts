@@ -83,6 +83,8 @@ export const mobileApi = {
     request<{ correct: boolean; xpGained: number; newStreak: number; levelChanged: boolean; direction: "up" | "down" | null }>("/sessions/answer", { method: "POST", body: JSON.stringify(b) }),
   endSession: (session_id: string) =>
     request<{ grade: string; percentage: number; xpEarned: number; newBadges: string[]; levelDirection: "up" | "down" | null }>("/sessions/end", { method: "POST", body: JSON.stringify({ session_id }) }),
+  requestDeepExplanation: (session_id: string, question_id: string) =>
+    request<{ deep_explanation: string }>(`/sessions/${session_id}/answer/${question_id}/explain`, { method: "POST" }),
 
   // Leaderboard
   getLeaderboard: (type: string) =>

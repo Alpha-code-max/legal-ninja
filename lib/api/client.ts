@@ -76,10 +76,10 @@ export const api = {
     request<{ status: string; questions_added: number; pass_activated: string | null }>(`/store/verify/${reference}`),
 
   // Questions
-  nextQuestion: (body: { subject: string; track: string; difficulty: string; count?: number; source?: string; year?: number }) =>
+  nextQuestion: (body: { subject: string; track: string; difficulty: string; count?: number; source?: string; year?: number; mode?: string }) =>
     request<{ question: unknown }>("/questions/next", { method: "POST", body: JSON.stringify(body) }),
 
-  guestNextQuestion: (body: { subject: string; track: string; difficulty: string; source?: string; year?: number }) =>
+  guestNextQuestion: (body: { subject: string; track: string; difficulty: string; source?: string; year?: number; mode?: string }) =>
     request<{ question: unknown }>("/questions/guest-next", { method: "POST", body: JSON.stringify(body) }),
   revealAnswer: (question_id: string) =>
     request<{ correct_option: string; explanation: string | null }>("/questions/reveal", {
@@ -103,7 +103,7 @@ export const api = {
       "/sessions/answer", { method: "POST", body: JSON.stringify(body) }
     ),
   endSession: (session_id: string) =>
-    request<{ grade: string; percentage: number; xpEarned: number; newBadges: string[]; levelDirection: "up" | "down" | null }>(
+    request<{ grade: string; percentage: number; xpEarned: number; newBadges: string[]; levelDirection: "up" | "down" | null; answers: Array<{question_id: string; selected: string; correct: boolean; time_taken_ms: number; score?: number; feedback?: string; strengths?: string[]; weaknesses?: string[]; xp_gained: number}> }>(
       "/sessions/end", { method: "POST", body: JSON.stringify({ session_id }) }
     ),
   getSessionHistory: () => request<unknown[]>("/sessions/history"),

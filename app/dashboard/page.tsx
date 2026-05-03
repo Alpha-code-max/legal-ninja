@@ -23,7 +23,7 @@ const QUICK_ACTIONS = [
   { id: "duel",            label: "Duel",     icon: "ShieldAlert",  color: "purple", emoji: "🥊",  desc: "1v1 battle" },
   { id: "battle_royale",   label: "Royale",   icon: "Trophy",       color: "gold",   emoji: "🏆",  desc: "4-way war" },
   { id: "daily_challenge", label: "Daily",    icon: "Target",       color: "green",  emoji: "🎯",  desc: "Daily quest" },
-  { id: "store",           label: "Top Up",   icon: "Zap",          color: "cyan",   emoji: "💎",  desc: "Get qs" },
+  { id: "exam_simulation", label: "Mock Exam",icon: "GraduationCap",color: "purple", emoji: "🎓",  desc: "Exam simulation" },
   { id: "weak_area_focus", label: "Grind",    icon: "BookOpen",     color: "red",    emoji: "🔥",  desc: "Weak areas" },
 ] as const;
 
@@ -32,7 +32,7 @@ const ACTION_GRADIENTS: Record<string, string> = {
   duel:            "from-purple-500/20 to-purple-900/10",
   battle_royale:   "from-yellow-500/20 to-yellow-900/10",
   daily_challenge: "from-green-500/20 to-green-900/10",
-  store:           "from-sky-500/20 to-sky-900/10",
+  exam_simulation: "from-fuchsia-500/20 to-fuchsia-900/10",
   weak_area_focus: "from-red-500/20 to-red-900/10",
 };
 
@@ -266,6 +266,22 @@ function DashboardContent() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <BalanceDisplay compact />
+            <button
+              onClick={() => router.push("/ranks")}
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-lg"
+              style={{ background: "color-mix(in srgb, var(--cyber-gold) 12%, transparent)", color: "var(--cyber-gold)" }}
+              title="View ranks"
+            >
+              🥋
+            </button>
+            <button
+              onClick={() => router.push("/info")}
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-lg"
+              style={{ background: "color-mix(in srgb, var(--cyber-cyan) 12%, transparent)", color: "var(--cyber-cyan)" }}
+              title="Game info"
+            >
+              ℹ️
+            </button>
             <ThemeToggle />
           </div>
         </div>
@@ -380,16 +396,17 @@ function DashboardContent() {
               .map((subject, i) => {
               const icon = SUBJECT_ICONS[subject.id] ?? { emoji: "📚", color: "var(--cyber-cyan)" };
               return (
-                <motion.button
+                <motion.div
                   key={subject.id}
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.05 * i }}
-                  whileHover={{ x: 4 }}
-                  onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}`)}
-                  className="glass-card rounded-xl flex items-center justify-between py-3 px-4 cursor-pointer group transition-all w-full text-left"
+                  className="glass-card rounded-xl flex items-center justify-between py-3 px-4 w-full"
                 >
-                  <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}`)}
+                    className="flex items-center gap-3 flex-1 text-left cursor-pointer group transition-all"
+                  >
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0"
                          style={{ background: `color-mix(in srgb, ${icon.color} 15%, transparent)`,
                                   border: `1px solid color-mix(in srgb, ${icon.color} 30%, transparent)` }}>
@@ -398,10 +415,20 @@ function DashboardContent() {
                     <span className="font-semibold text-sm" style={{ color: "var(--text-base)" }}>
                       {subject.name}
                     </span>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => router.push(`/quiz?mode=exam_simulation&track=${track}&subject=${subject.id}`)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                      style={{ background: "color-mix(in srgb, var(--cyber-purple) 15%, transparent)", color: "var(--cyber-purple)" }}
+                      title="Mock Exam"
+                    >
+                      🎓 Mock
+                    </button>
+                    <Lucide.ChevronRight size={14} className="opacity-30"
+                                         style={{ color: icon.color }} />
                   </div>
-                  <Lucide.ChevronRight size={14} className="opacity-30 group-hover:opacity-100 transition-opacity"
-                                       style={{ color: icon.color }} />
-                </motion.button>
+                </motion.div>
               );
             })}
           </div>

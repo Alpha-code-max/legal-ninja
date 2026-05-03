@@ -34,10 +34,10 @@ const FAQ: { q: string; a: string }[] = [
   { q: "How do I report a wrong question?",  a: "Email support@legalninja.app with the question text. We review every report and correct errors within 48 hours." },
 ];
 
-const THEMES: { id: ThemeId | "midnight"; label: string; preview: string[]; available: boolean }[] = [
+const THEMES: { id: ThemeId; label: string; preview: string[]; available: boolean }[] = [
   { id: "cyber_dark", label: "Cyber Dark", preview: ["#050A0F", "#00F5FF", "#C026D3"], available: true },
   { id: "light",      label: "Light Mode", preview: ["#F0F5FA", "#0087B5", "#6D28D9"], available: true },
-  { id: "midnight",   label: "Midnight",   preview: ["#0A0A1A", "#7C3AED", "#EC4899"], available: false },
+  { id: "moonlight", label: "Moonlight", preview: ["#0F1419", "#E8EDF5", "#9CA3AF"], available: true },
 ];
 
 function SectionLabel({ label }: { label: string }) {

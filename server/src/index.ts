@@ -102,8 +102,8 @@ startCronJobs();
 const PORT = parseInt(process.env.PORT ?? "4000");
 connectDB()
   .then(() => {
-    httpServer.listen(PORT, () => {
-      console.log(`🥷 Legal Ninja API running on http://localhost:${PORT}`);
+    httpServer.listen(PORT, "0.0.0.0", () => {
+      console.log(`🥷 Legal Ninja API running on port ${PORT}`);
     });
 
     httpServer.on("error", (err: NodeJS.ErrnoException) => {

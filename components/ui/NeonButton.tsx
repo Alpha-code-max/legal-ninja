@@ -43,7 +43,7 @@ export function NeonButton({
       disabled={disabled}
       type={type}
       className={cn(
-        "relative font-exo font-bold tracking-widest uppercase transition-all duration-300",
+        "relative font-bold tracking-widest uppercase transition-all duration-300",
         "disabled:opacity-40 disabled:cursor-not-allowed border",
         "before:absolute before:inset-0 before:bg-white/5 before:opacity-0 hover:before:opacity-100 before:transition-opacity",
         sizes[size],

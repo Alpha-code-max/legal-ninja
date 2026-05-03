@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { api, setToken } from "@/lib/api/client";
 import { useUserStore } from "@/lib/store/user-store";
 import { useGuestStore } from "@/lib/store/guest-store";
@@ -86,7 +87,14 @@ export default function SignUpPage() {
       >
         {/* Logo */}
         <div className="text-center space-y-1">
-          <div className="text-4xl">🥷</div>
+          <div className="relative w-16 h-16 mx-auto mb-2">
+            <Image
+              src="/logo.png.png"
+              alt="Legal Ninja Logo"
+              fill
+              className="object-contain"
+            />
+          </div>
           <h1 className="text-2xl font-black gradient-text">Join Legal Ninja</h1>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             100 free questions. No credit card.

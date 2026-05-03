@@ -9,14 +9,13 @@ import { useTheme } from "@context/ThemeContext";
 
 const BUNDLES = [
   { index: 0, label: "Starter Pack",  qty: 50,   price: "₦500",   color: "#00F5FF" },
-  { index: 1, label: "Student Pack",  qty: 200,  price: "₦1,500", color: "#22FF88" },
-  { index: 2, label: "Ninja Pack",    qty: 500,  price: "₦3,000", color: "#C026D3" },
-  { index: 3, label: "Supreme Pack",  qty: 1500, price: "₦8,000", color: "#FFD700" },
+  { index: 1, label: "Standard Pack", qty: 100,  price: "₦1,000", color: "#22FF88" },
+  { index: 2, label: "Pro Pack",      qty: 200,  price: "₦1,900", color: "#C026D3" },
+  { index: 3, label: "Supreme Pack",  qty: 500,  price: "₦4,500", color: "#FFD700" },
 ];
 const PASSES = [
-  { id: "daily_pass",   label: "Daily Pass",   duration: "1 day",   price: "₦200",   color: "#00F5FF", emoji: "⚡" },
-  { id: "weekly_pass",  label: "Weekly Pass",  duration: "7 days",  price: "₦800",   color: "#22FF88", emoji: "🔥" },
-  { id: "monthly_pass", label: "Monthly Pass", duration: "30 days", price: "₦2,500", color: "#C026D3", emoji: "👑" },
+  { id: "7_day_unlimited",  label: "7-Day Unlimited",     duration: "7 days",  price: "₦700",  color: "#00F5FF", emoji: "⚡" },
+  { id: "subject_mastery",  label: "Subject Mastery Pack", duration: "30 days", price: "₦800",  color: "#C026D3", emoji: "🎓" },
 ];
 
 export default function Store() {
@@ -108,7 +107,7 @@ export default function Store() {
                 <View style={{ alignItems: "flex-end", gap: 8 }}>
                   <Text style={{ color: colors.text, fontSize: 15, fontFamily: "SpaceMono_700Bold" }}>{p.price}</Text>
                   <NeonButton label="Get Pass" onPress={() => handleBuy("pass", p.id)} loading={loading === `pass-${p.id}`} size="sm"
-                    variant={p.id === "daily_pass" ? "cyan" : p.id === "weekly_pass" ? "green" : "purple"} />
+                    variant={p.id === "7_day_unlimited" ? "cyan" : "purple"} />
                 </View>
               </View>
             </CyberCard>
@@ -116,10 +115,22 @@ export default function Store() {
         ))}
       </View>
 
-      <View style={{ marginTop: 28, padding: 16, backgroundColor: colors.isDark ? "rgba(0,245,255,0.04)" : "rgba(0,135,181,0.06)", borderRadius: 14, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: "SpaceGrotesk_400Regular", textAlign: "center", lineHeight: 18 }}>
-          Payments processed securely via Paystack. You'll be redirected to complete payment in your browser. Questions are credited instantly after payment.
-        </Text>
+      <View style={{ marginTop: 28, gap: 12 }}>
+        <View style={{ padding: 16, backgroundColor: colors.isDark ? "rgba(0,245,255,0.04)" : "rgba(0,135,181,0.06)", borderRadius: 14, borderWidth: 1, borderColor: colors.border }}>
+          <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: "SpaceGrotesk_400Regular", textAlign: "center", lineHeight: 18 }}>
+            🔒 Payments processed securely via Paystack. Questions credited instantly after payment.
+          </Text>
+        </View>
+
+        <View style={{ padding: 16, backgroundColor: colors.isDark ? "rgba(34,255,136,0.04)" : "rgba(34,255,136,0.06)", borderRadius: 14, borderWidth: 1, borderColor: colors.border }}>
+          <Text style={{ color: "#22FF88", fontSize: 10, fontFamily: "SpaceGrotesk_700Bold", marginBottom: 6 }}>QUESTIONS USAGE ORDER</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 10, fontFamily: "SpaceGrotesk_400Regular", lineHeight: 16 }}>
+            Questions used in this order:{"\n"}
+            1️⃣ <Text style={{ color: "#22FF88", fontFamily: "SpaceMono_700Bold" }}>Earned</Text> (from activities){"\n"}
+            2️⃣ <Text style={{ color: "#00F5FF", fontFamily: "SpaceMono_700Bold" }}>Paid</Text> (what you purchased){"\n"}
+            3️⃣ <Text style={{ color: "#C026D3", fontFamily: "SpaceMono_700Bold" }}>Free</Text> (starter questions)
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );

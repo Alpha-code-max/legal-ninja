@@ -8,6 +8,7 @@ import {
   listDocuments,
   deleteDocument,
   populateQuestionBankFromPdf,
+  extractPastQuestionsFromPdf,
   getQuestionBankStats,
 } from "../services/pdf";
 import { generateQuestion, questionPassesStrictCheck } from "../services/ai";
@@ -373,32 +374,65 @@ router.post("/questions/generate", requireAdmin, async (req: Request, res) => {
     res.status(500).json({ error: "Failed to generate questions" });
   }
 });
-// ─── Bulk import past exam questions ──────────────────────────────────────────
-router.post("/import-past-questions", requireAdmin, async (req: Request, res) => {
+// ─── Bulk import past exam questions (supports JSON or PDF) ──────────────────
+router.post("/import-past-questions", requireAdmin, upload.single("pdf"), async (req: Request, res) => {
   try {
-    const { questions, year: globalYear } = req.body as {
-      questions: {
-        subject: string;
-        track: string;
-        difficulty: string;
-        question: string;
-        options: { A: string; B: string; C: string; D: string };
-        correct_option: "A" | "B" | "C" | "D";
-        explanation?: string;
-        topic?: string;
-        year?: number;
-      }[];
-      year?: number; // global year for the entire batch
+    const { subject, track, year: globalYear, questions: jsonQuestions } = req.body as {
+      subject?: string;
+      track?: string;
+      questions?: any[];
+      year?: number;
     };
-    if (!Array.isArray(questions) || questions.length === 0) {
-      res.status(400).json({ error: "questions array required" });
+
+    // Case 1: PDF Upload
+    if (req.file) {
+      if (!subject || !track) {
+        res.status(400).json({ error: "subject and track are required for PDF upload" });
+        return;
+      }
+      if (!VALID_SUBJECTS.includes(subject)) {
+        res.status(400).json({ error: "Invalid subject" });
+        return;
+      }
+      if (!VALID_TRACKS.includes(track)) {
+        res.status(400).json({ error: "Invalid track" });
+        return;
+      }
+
+      const result = await extractAndStoreChunks({
+        filePath: req.file.path,
+        originalName: req.file.originalname,
+        subject,
+        track,
+        uploadedBy: req.user?.uid ?? null,
+      });
+
+      res.status(201).json({
+        message: "PDF uploaded for past question extraction. Processing in background.",
+        documentId: result.documentId,
+      });
+
+      // Background process
+      extractPastQuestionsFromPdf({
+        documentId: result.documentId,
+        subject,
+        track,
+        year: globalYear ? Number(globalYear) : undefined,
+      }).catch((err) => console.error("Past question extraction error:", err));
+
       return;
     }
 
-    const docs = questions.map((q) => ({
-      subject:        q.subject,
-      track:          q.track,
-      difficulty:     q.difficulty,
+    // Case 2: JSON Import (original logic)
+    if (!Array.isArray(jsonQuestions) || jsonQuestions.length === 0) {
+      res.status(400).json({ error: "questions array OR pdf file required" });
+      return;
+    }
+
+    const docs = jsonQuestions.map((q) => ({
+      subject:        q.subject || subject,
+      track:          q.track || track,
+      difficulty:     q.difficulty || "medium",
       question:       q.question,
       options:        q.options,
       correct_option: q.correct_option,
@@ -416,7 +450,7 @@ router.post("/import-past-questions", requireAdmin, async (req: Request, res) =>
     const result = await Question.insertMany(docs, { ordered: false });
     res.json({ imported: result.length });
   } catch (err) {
-    console.error("Bulk import failed:", err);
+    console.error("Past question import failed:", err);
     res.status(500).json({ error: "Failed to import questions" });
   }
 });

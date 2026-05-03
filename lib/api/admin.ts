@@ -82,4 +82,35 @@ export const adminApi = {
     adminRequest<{ started: boolean; documents_found?: number; message: string }>(
       `/admin/questions/regenerate/${subject}`, { method: "POST" }, key
     ),
+
+  importPastQuestions: async (key: string, params: {
+    subject?: string;
+    track?: string;
+    year?: number;
+    questions?: any[];
+    file?: File;
+  }) => {
+    const { file, ...rest } = params;
+    if (file) {
+      const form = new FormData();
+      form.append("pdf", file);
+      if (rest.subject) form.append("subject", rest.subject);
+      if (rest.track) form.append("track", rest.track);
+      if (rest.year) form.append("year", String(rest.year));
+
+      const res = await fetch(`${API_BASE}/admin/import-past-questions`, {
+        method: "POST",
+        headers: { "x-admin-key": key },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      return data;
+    } else {
+      return adminRequest<any>("/admin/import-past-questions", {
+        method: "POST",
+        body: JSON.stringify(rest),
+      }, key);
+    }
+  },
 };

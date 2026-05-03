@@ -35,10 +35,18 @@ const PASSES: Record<string, { price_ngn: number; name: string; days: number }> 
 router.post("/buy/bundle", requireAuth, validate(BundleSchema), async (req: Request, res) => {
   try {
     const bundle = BUNDLES[req.body.bundle_index];
-    if (!bundle) { res.status(400).json({ error: "Invalid bundle" }); return; }
+    if (!bundle) {
+      console.warn(`[Store] Invalid bundle index: ${req.body.bundle_index}`);
+      res.status(400).json({ error: "Invalid bundle index" });
+      return;
+    }
 
     const user = await User.findById(req.user!.uid, "email").lean();
-    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    if (!user) {
+      console.error(`[Store] User ${req.user!.uid} not found`);
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
 
     const reference = `LN-${uuid().replace(/-/g, "").slice(0, 16).toUpperCase()}`;
 
@@ -51,6 +59,8 @@ router.post("/buy/bundle", requireAuth, validate(BundleSchema), async (req: Requ
       status: "pending",
     });
 
+    console.log(`[Store] Initiating bundle purchase: ${reference}, ${bundle.questions} questions @ ₦${bundle.price_ngn}`);
+
     const result = await initPaystackPayment({
       userId: req.user!.uid,
       email: user.email,
@@ -61,7 +71,7 @@ router.post("/buy/bundle", requireAuth, validate(BundleSchema), async (req: Requ
 
     res.json(result);
   } catch (err) {
-    console.error(err);
+    console.error("[Store] Bundle purchase error:", err);
     res.status(500).json({ error: "Failed to initiate payment" });
   }
 });
@@ -70,10 +80,18 @@ router.post("/buy/bundle", requireAuth, validate(BundleSchema), async (req: Requ
 router.post("/buy/pass", requireAuth, validate(PassSchema), async (req: Request, res) => {
   try {
     const pass = PASSES[req.body.pass_id];
-    if (!pass) { res.status(400).json({ error: "Invalid pass" }); return; }
+    if (!pass) {
+      console.warn(`[Store] Invalid pass ID: ${req.body.pass_id}`);
+      res.status(400).json({ error: `Invalid pass ID: ${req.body.pass_id}` });
+      return;
+    }
 
     const user = await User.findById(req.user!.uid, "email").lean();
-    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    if (!user) {
+      console.error(`[Store] User ${req.user!.uid} not found`);
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
 
     const reference = `LN-${uuid().replace(/-/g, "").slice(0, 16).toUpperCase()}`;
 
@@ -87,6 +105,8 @@ router.post("/buy/pass", requireAuth, validate(PassSchema), async (req: Request,
       status: "pending",
     });
 
+    console.log(`[Store] Initiating pass purchase: ${reference}, ${pass.name} (${pass.days} days) @ ₦${pass.price_ngn}`);
+
     const result = await initPaystackPayment({
       userId: req.user!.uid,
       email: user.email,
@@ -98,7 +118,7 @@ router.post("/buy/pass", requireAuth, validate(PassSchema), async (req: Request,
 
     res.json(result);
   } catch (err) {
-    console.error(err);
+    console.error("[Store] Pass purchase error:", err);
     res.status(500).json({ error: "Failed to initiate pass purchase" });
   }
 });

@@ -1,6 +1,6 @@
 import { FadeIn } from '@components/ui/FadeIn';
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from "react-native";
 import { router } from "expo-router";
 import * as LocalAuthentication from "expo-local-authentication";
 import { NeonButton } from "@components/ui/NeonButton";
@@ -58,9 +58,11 @@ export default function SignIn() {
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 24 }} keyboardShouldPersistTaps="handled">
         <FadeIn duration={400}>
           <View style={{ alignItems: "center", marginBottom: 40 }}>
-            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "rgba(0,245,255,0.1)", borderWidth: 2, borderColor: "#00F5FF", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-              <Text style={{ fontSize: 32 }}>⚖️</Text>
-            </View>
+            <Image 
+              source={require("@/assets/logo.png")} 
+              style={{ width: 120, height: 120, marginBottom: 8 }} 
+              resizeMode="contain" 
+            />
             <Text style={{ fontSize: 28, fontFamily: "SpaceGrotesk_700Bold", color: "#00F5FF", letterSpacing: 1 }}>LEGAL NINJA</Text>
             <Text style={{ fontSize: 12, color: colors.textMuted, fontFamily: "SpaceGrotesk_400Regular", marginTop: 4 }}>Master the Law</Text>
           </View>

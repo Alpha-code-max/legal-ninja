@@ -1,0 +1,14 @@
+
+> legal-ninja@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.28.96.1:3000
+- Environments: .env.local
+✓ Ready in 1286ms
+
+○ Compiling /quiz ...
+ GET /quiz?mode=exam_simulation&track=law_school_track 200 in 13.6s (next.js: 4.9s, application-code: 8.7s)
+ GET /admin 200 in 13.6s (next.js: 12.6s, application-code: 969ms)
+[?25h

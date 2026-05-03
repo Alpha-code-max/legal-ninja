@@ -80,9 +80,12 @@ export interface DbQuestion {
   subject: string;
   track: string;
   difficulty: string;
+  type: "mcq" | "essay";
   question: string;
-  options: { A: string; B: string; C: string; D: string };
-  correct_option: "A" | "B" | "C" | "D";
+  options?: { A: string; B: string; C: string; D: string };
+  correct_option?: "A" | "B" | "C" | "D";
   explanation: string | null;
+  model_answer?: string;
+  rubric?: string;
   topic: string | null;
 }

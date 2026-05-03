@@ -39,10 +39,10 @@ export const GAME_MODES = {
   },
   exam_simulation: {
     id: "exam_simulation",
-    name: "Exam Simulation",
-    description: "Long timed Bar Exam / Moot Court style sessions",
-    xp_multiplier: 1.5,
-    icon: "📋",
+    name: "Mock Exam",
+    description: "Mixed MCQ & Essay under exam conditions",
+    xp_multiplier: 2.0,
+    icon: "🎓",
   },
   weak_area_focus: {
     id: "weak_area_focus",

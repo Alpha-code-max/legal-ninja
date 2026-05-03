@@ -144,16 +144,14 @@ export default function Dashboard() {
       )}
 
       <Text style={{ color: colors.textMuted, fontSize: 10, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Quick Play</Text>
-      <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
         <NeonButton label="Practice" onPress={() => router.push("/quiz/setup")} style={{ flex: 1 }} size="sm" />
-        <NeonButton label="Daily Challenge" onPress={() => router.push({ pathname: "/quiz/setup", params: { mode: "daily_challenge" } })} variant="purple" style={{ flex: 1 }} size="sm" />
+        <NeonButton label="Mock Exam" onPress={() => router.push({ pathname: "/quiz/setup", params: { mode: "mock_exam" } })} variant="purple" style={{ flex: 1 }} size="sm" />
       </View>
-      {!guest && (
-        <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
-          <NeonButton label="⚔️ Duel" onPress={() => router.push({ pathname: "/lobby", params: { mode: "duel" } })} variant="gold" style={{ flex: 1 }} size="sm" />
-          <NeonButton label="👑 Battle Royale" onPress={() => router.push({ pathname: "/lobby", params: { mode: "battle_royale" } })} variant="red" style={{ flex: 1 }} size="sm" />
-        </View>
-      )}
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+        <NeonButton label="Daily Challenge" onPress={() => router.push({ pathname: "/quiz/setup", params: { mode: "daily_challenge" } })} variant="gold" style={{ flex: 1 }} size="sm" />
+        {!guest && <NeonButton label="⚔️ Duel" onPress={() => router.push({ pathname: "/lobby", params: { mode: "duel" } })} variant="red" style={{ flex: 1 }} size="sm" />}
+      </View>
 
       <Text style={{ color: colors.textMuted, fontSize: 10, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Subjects</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
