@@ -49,30 +49,38 @@ export default function StorePage() {
       setPurchased("✅ Payment received! Refreshing your balance...");
 
       // Verify transaction and refresh user balance
-      api.verifyTransaction(reference)
-        .then((result) => {
-          // Refresh user data to get updated balance
-          return api.getMe().then((me) => {
-            user.setUser({
-              uid: user.uid,
-              paid_questions_balance: me.paid_questions_balance,
-              earned_questions_balance: me.earned_questions_balance,
-              free_questions_remaining: me.free_questions_remaining,
-              active_passes: (me.active_passes ?? []).map((p: any) => ({
-                id: p.pass_type,
-                name: p.pass_name,
-                expires_at: new Date(p.expires_at).getTime(),
-                subject_specific: false,
-              })),
+      const verifyWithRetry = (attemptsLeft = 3): Promise<void> => {
+        return api.verifyTransaction(reference)
+          .then((result) => {
+            if (result.status === "pending" && attemptsLeft > 1) {
+              // Webhook not processed yet, retry after 1 second
+              return new Promise(resolve => setTimeout(resolve, 1000)).then(() => verifyWithRetry(attemptsLeft - 1));
+            }
+            // Refresh user data to get updated balance
+            return api.getMe().then((me) => {
+              user.setUser({
+                paid_questions_balance: me.paid_questions_balance,
+                earned_questions_balance: me.earned_questions_balance,
+                free_questions_remaining: me.free_questions_remaining,
+                active_passes: (me.active_passes ?? []).map((p) => ({
+                  id: p.pass_type,
+                  name: p.pass_name,
+                  expires_at: new Date(p.expires_at).getTime(),
+                  subject_specific: !!p.subject_id,
+                  subject_id: p.subject_id,
+                })),
+              });
+              setPurchased("✅ Payment successful! Questions added.");
+              setTimeout(() => setPurchased(null), 5000);
             });
-            setPurchased("✅ Payment successful! Questions added.");
-            setTimeout(() => setPurchased(null), 5000);
+          })
+          .catch((err) => {
+            setPurchased("⚠️ Payment processed but couldn't verify. Refresh to check your balance.");
+            setTimeout(() => setPurchased(null), 6000);
           });
-        })
-        .catch((err) => {
-          setPurchased("⚠️ Payment processed but couldn't verify. Refresh to check your balance.");
-          setTimeout(() => setPurchased(null), 6000);
-        });
+      };
+
+      verifyWithRetry();
 
       window.history.replaceState({}, "", "/store");
     }
