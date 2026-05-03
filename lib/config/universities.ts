@@ -1,11 +1,10 @@
 export const LAW_SCHOOLS = [
-  "Nigerian Law School",
-  "Baze University",
-  "Obafemi Awolowo University (OAU)",
-  "University of Ibadan (UI)",
-  "University of Lagos (UNILAG)",
-  "University of Port Harcourt (UNIPORT)",
-  "Other",
+  "Nigerian Law School - Lagos",
+  "Nigerian Law School - Abuja",
+  "Nigerian Law School - Enugu",
+  "Nigerian Law School - Bayelsa",
+  "Nigerian Law School - Kano",
+  "Nigerian Law School - Yola",
 ];
 
 export const UNDERGRAD_INSTITUTIONS = [
