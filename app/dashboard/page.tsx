@@ -258,26 +258,26 @@ function DashboardContent() {
       {showOnboarding && <StudentOnboarding onComplete={handleOnboardingComplete} />}
 
       {/* Fixed HUD Header */}
-      <div className="fixed top-0 left-0 right-0 z-[60] backdrop-blur-xl border-b h-20"
+      <div className="fixed top-0 left-0 right-0 z-[60] backdrop-blur-xl border-b h-16 sm:h-20"
            style={{ background: "var(--cyber-card-bg)", borderColor: "var(--cyber-border)" }}>
-        <div className="max-w-xl mx-auto h-full flex items-center gap-3 px-4">
-          <LevelBadge level={user.level} size="md" />
+        <div className="max-w-xl mx-auto h-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4">
+          <LevelBadge level={user.level} size="sm" />
           <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 mb-1">
-              <h1 className="font-black text-lg uppercase tracking-tight" style={{ color: "var(--text-base)" }}>
+            <div className="flex items-baseline gap-1 sm:gap-2 mb-0.5">
+              <h1 className="font-black text-base sm:text-lg uppercase tracking-tight truncate" style={{ color: "var(--text-base)" }}>
                 {user.username || "Recruit"}
               </h1>
-              <span className="text-[10px] font-bold neon-text-cyan opacity-80">
+              <span className="text-[9px] sm:text-[10px] font-bold neon-text-cyan opacity-80 whitespace-nowrap">
                 {currentLevel.title}
               </span>
             </div>
             <XPBar xp={user.xp} level={user.level} showLabel={false} />
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <BalanceDisplay compact />
             <button
               onClick={() => router.push("/ranks")}
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-lg"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-base sm:text-lg hidden sm:flex"
               style={{ background: "color-mix(in srgb, var(--cyber-gold) 12%, transparent)", color: "var(--cyber-gold)" }}
               title="View ranks"
             >
@@ -285,7 +285,7 @@ function DashboardContent() {
             </button>
             <button
               onClick={() => router.push("/info")}
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-lg"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-base sm:text-lg"
               style={{ background: "color-mix(in srgb, var(--cyber-cyan) 12%, transparent)", color: "var(--cyber-cyan)" }}
               title="Game info"
             >
@@ -300,7 +300,7 @@ function DashboardContent() {
         variants={containerVars}
         initial="hidden"
         animate="show"
-        className="max-w-xl mx-auto px-4 pt-24 space-y-6"
+        className="max-w-xl mx-auto px-3 sm:px-4 pt-20 sm:pt-24 space-y-6"
       >
 
         {/* Status Hub */}
