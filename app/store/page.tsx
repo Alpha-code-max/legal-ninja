@@ -43,12 +43,40 @@ export default function StorePage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") {
-      setPurchased("✅ Payment received! Your questions will appear shortly.");
-      setTimeout(() => setPurchased(null), 5000);
+    const reference = params.get("reference");
+
+    if (params.get("payment") === "success" && reference) {
+      setPurchased("✅ Payment received! Refreshing your balance...");
+
+      // Verify transaction and refresh user balance
+      api.verifyTransaction(reference)
+        .then((result) => {
+          // Refresh user data to get updated balance
+          return api.getMe().then((me) => {
+            user.setUser({
+              uid: user.uid,
+              paid_questions_balance: me.paid_questions_balance,
+              earned_questions_balance: me.earned_questions_balance,
+              free_questions_remaining: me.free_questions_remaining,
+              active_passes: (me.active_passes ?? []).map((p: any) => ({
+                id: p.pass_type,
+                name: p.pass_name,
+                expires_at: new Date(p.expires_at).getTime(),
+                subject_specific: false,
+              })),
+            });
+            setPurchased("✅ Payment successful! Questions added.");
+            setTimeout(() => setPurchased(null), 5000);
+          });
+        })
+        .catch((err) => {
+          setPurchased("⚠️ Payment processed but couldn't verify. Refresh to check your balance.");
+          setTimeout(() => setPurchased(null), 6000);
+        });
+
       window.history.replaceState({}, "", "/store");
     }
-  }, []);
+  }, [user]);
 
   const handleBundlePurchase = async (bundle: Bundle, index: number) => {
     if (!user.uid) { router.push("/auth/sign-in"); return; }

@@ -28,7 +28,7 @@ export async function initPaystackPayment(params: {
         questions_to_add: params.questionsToAdd,
         pass_type: params.passType ?? null,
       },
-      callback_url: `${process.env.FRONTEND_URL}/store?payment=success`,
+      callback_url: `${process.env.FRONTEND_URL}/store?payment=success&reference=${params.reference}`,
     },
     { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
   );
