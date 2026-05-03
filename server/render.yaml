@@ -3,32 +3,26 @@ services:
     name: legal-ninja-api
     runtime: node
     plan: free
-    buildCommand: npm run build
+    buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        scope: runtime
       - key: MONGODB_URI
-        scope: runtime
+        scope: all
       - key: JWT_SECRET
-        scope: runtime
+        scope: all
       - key: OPENAI_API_KEY
-        scope: runtime
+        scope: all
       - key: GEMINI_API_KEY
-        scope: runtime
+        scope: all
       - key: GROQ_API_KEY
-        scope: runtime
+        scope: all
       - key: PAYSTACK_SECRET_KEY
-        scope: runtime
+        scope: all
       - key: PAYSTACK_PUBLIC_KEY
-        scope: runtime
-      - key: FLW_SECRET_KEY
-        scope: runtime
-      - key: FLW_PUBLIC_KEY
-        scope: runtime
+        scope: all
       - key: ADMIN_SECRET_KEY
-        scope: runtime
+        scope: all
       - key: FRONTEND_URL
-        scope: runtime
+        scope: all
