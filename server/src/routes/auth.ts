@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Router, type Request } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";

@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Groq from "groq-sdk";
 import OpenAI from "openai";

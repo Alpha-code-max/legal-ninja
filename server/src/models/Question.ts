@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import mongoose, { Schema, type Document } from "mongoose";
 import type { Types } from "mongoose";
 

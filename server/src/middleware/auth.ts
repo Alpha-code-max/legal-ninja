@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import type { AuthUser } from "../types";

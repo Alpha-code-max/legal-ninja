@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { GameSession } from "../models/GameSession";
 import { User } from "../models/User";
 import { LeaderboardEntry } from "../models/LeaderboardEntry";

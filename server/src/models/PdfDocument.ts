@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import mongoose, { Schema, type Document } from "mongoose";
 
 export interface IPdfDocument extends Document {

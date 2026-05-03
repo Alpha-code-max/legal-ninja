@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Server as SocketServer } from "socket.io";
 import type { Server as HttpServer } from "http";
 import jwt from "jsonwebtoken";

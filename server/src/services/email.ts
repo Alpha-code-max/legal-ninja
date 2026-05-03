@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import nodemailer from "nodemailer";
 
 function createTransport() {

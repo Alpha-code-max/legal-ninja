@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { Router, type Request } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth";

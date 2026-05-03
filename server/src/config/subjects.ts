@@ -1,4 +1,3 @@
-/// <reference types="node" />
 /**
  * Subject configuration — single source of truth for role-based visibility.
  *

@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import "dotenv/config";
 import http from "http";
 import express from "express";
