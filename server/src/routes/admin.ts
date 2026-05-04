@@ -292,15 +292,32 @@ router.get("/stats", requireAdmin, async (_req, res) => {
 
 // Admin: approve or create questions (small endpoints to support admin workflows)
 
-// POST /api/admin/questions — create or import a single question
+// POST /api/admin/questions — create or import a single question (MCQ or Essay)
 router.post("/questions", requireAdmin, async (req: Request, res) => {
   try {
     const body = req.body as any;
+    const type = body.type ?? "mcq";
+
+    // Validate essay has required fields
+    if (type === "essay" && (!body.question || !body.model_answer)) {
+      res.status(400).json({ error: "Essay questions require 'question' and 'model_answer' fields" });
+      return;
+    }
+
+    // Validate MCQ has required fields
+    if (type === "mcq" && (!body.question || !body.options || !body.correct_option)) {
+      res.status(400).json({ error: "MCQ questions require 'question', 'options', and 'correct_option' fields" });
+      return;
+    }
+
     const q = await Question.create({
       subject: body.subject,
       track: body.track,
       difficulty: body.difficulty,
+      type,
       question: body.question,
+      model_answer: body.model_answer ?? null,
+      rubric: body.rubric ?? null,
       options: body.options,
       correct_option: body.correct_option,
       explanation: body.explanation ?? null,
@@ -311,7 +328,7 @@ router.post("/questions", requireAdmin, async (req: Request, res) => {
       validated: body.validated ?? true,
       created_by: req.user?.uid ?? null,
     });
-    res.status(201).json({ id: String(q._id) });
+    res.status(201).json({ id: String(q._id), type });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create question" });
@@ -332,9 +349,10 @@ router.post("/questions/approve/:id", requireAdmin, async (req: Request, res) =>
 });
 
 // POST /api/admin/questions/generate
+// Generates MCQ or Essay questions based on type parameter
 router.post("/questions/generate", requireAdmin, async (req: Request, res) => {
   try {
-    const { subject, track, difficulty, count = 5, pdfContext, allowed_roles } = req.body as any;
+    const { subject, track, difficulty, count = 5, pdfContext, allowed_roles, type = "mcq" } = req.body as any;
     const VALID = [
       "civil_procedure", "criminal_procedure", "property_law", "corporate_law",
       "legal_ethics", "constitutional_law", "evidence_law",
@@ -342,17 +360,40 @@ router.post("/questions/generate", requireAdmin, async (req: Request, res) => {
     ];
     if (!VALID.includes(subject)) { res.status(400).json({ error: "Invalid subject" }); return; }
     if (!["law_school_track","undergraduate_track"].includes(track)) { res.status(400).json({ error: "Invalid track" }); return; }
+    if (!["mcq", "essay", "mixed"].includes(type)) { res.status(400).json({ error: "Invalid type (mcq/essay/mixed)" }); return; }
+
     const created: any[] = [];
     for (let i = 0; i < Math.min(20, Number(count)); i++) {
       try {
-        const aiq = await generateQuestion({ subject, difficulty, track, pdfContext });
-        const fullText = [aiq.question, aiq.options?.A ?? "", aiq.options?.B ?? "", aiq.options?.C ?? "", aiq.options?.D ?? "", aiq.explanation ?? "", aiq.topic ?? ""].join(" ");
-        const validated = questionPassesStrictCheck(fullText, subject);
+        // Determine which type to generate
+        let generateType: "mcq" | "essay" = "mcq";
+        if (type === "mixed") {
+          generateType = Math.random() > 0.5 ? "essay" : "mcq";
+        } else {
+          generateType = type as "mcq" | "essay";
+        }
+
+        const aiq = await generateQuestion({ subject, difficulty, track, pdfContext, type: generateType });
+
+        // Validate based on question type
+        let validated = true;
+        if (generateType === "mcq") {
+          const fullText = [aiq.question, aiq.options?.A ?? "", aiq.options?.B ?? "", aiq.options?.C ?? "", aiq.options?.D ?? "", aiq.explanation ?? "", aiq.topic ?? ""].join(" ");
+          validated = questionPassesStrictCheck(fullText, subject);
+        } else {
+          // For essays, validate the question and model answer
+          const fullText = [aiq.question, aiq.model_answer ?? "", aiq.explanation ?? "", aiq.topic ?? ""].join(" ");
+          validated = questionPassesStrictCheck(fullText, subject);
+        }
+
         const q = await Question.create({
           subject: aiq.subject,
           track: aiq.track,
           difficulty: aiq.difficulty,
+          type: generateType,
           question: aiq.question,
+          model_answer: aiq.model_answer ?? null,
+          rubric: aiq.rubric ?? null,
           options: aiq.options,
           correct_option: aiq.correct_option,
           explanation: aiq.explanation ?? null,
@@ -363,17 +404,68 @@ router.post("/questions/generate", requireAdmin, async (req: Request, res) => {
           validated,
           created_by: req.user?.uid ?? null,
         });
-        created.push({ id: String(q._id), validated });
+        created.push({ id: String(q._id), type: generateType, validated });
       } catch (err) {
         console.error("AI generation item failed:", String(err));
       }
     }
-    res.json({ created });
+    res.json({ created, type });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to generate questions" });
   }
 });
+// POST /api/admin/questions/generate-essays — dedicated essay generation endpoint
+router.post("/questions/generate-essays", requireAdmin, async (req: Request, res) => {
+  try {
+    const { subject, track, difficulty, count = 5, pdfContext, allowed_roles } = req.body as any;
+    const VALID = [
+      "civil_procedure", "criminal_procedure", "property_law", "corporate_law",
+      "legal_ethics", "constitutional_law", "evidence_law",
+      "law_of_contract", "law_of_torts", "criminal_law", "equity_and_trusts", "family_law",
+    ];
+    if (!VALID.includes(subject)) { res.status(400).json({ error: "Invalid subject" }); return; }
+    if (!["law_school_track","undergraduate_track"].includes(track)) { res.status(400).json({ error: "Invalid track" }); return; }
+
+    const created: any[] = [];
+    for (let i = 0; i < Math.min(20, Number(count)); i++) {
+      try {
+        const aiq = await generateQuestion({ subject, difficulty, track, pdfContext, type: "essay" });
+
+        // Validate essay question
+        const fullText = [aiq.question, aiq.model_answer ?? "", aiq.explanation ?? "", aiq.topic ?? ""].join(" ");
+        const validated = questionPassesStrictCheck(fullText, subject);
+
+        const q = await Question.create({
+          subject: aiq.subject,
+          track: aiq.track,
+          difficulty: aiq.difficulty,
+          type: "essay",
+          question: aiq.question,
+          model_answer: aiq.model_answer ?? null,
+          rubric: aiq.rubric ?? null,
+          options: aiq.options,
+          correct_option: aiq.correct_option,
+          explanation: aiq.explanation ?? null,
+          topic: aiq.topic ?? null,
+          source: "ai",
+          allowed_roles: allowed_roles ?? undefined,
+          approved: false,
+          validated,
+          created_by: req.user?.uid ?? null,
+        });
+        created.push({ id: String(q._id), validated, model_answer: aiq.model_answer ? true : false });
+      } catch (err) {
+        console.error("Essay generation item failed:", String(err));
+      }
+    }
+    res.json({ created, count: created.length, type: "essay" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to generate essay questions" });
+  }
+});
+
 // ─── Bulk import past exam questions (supports JSON or PDF) ──────────────────
 router.post("/import-past-questions", requireAdmin, upload.single("pdf"), async (req: Request, res) => {
   try {

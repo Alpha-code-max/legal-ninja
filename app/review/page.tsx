@@ -181,6 +181,7 @@ function ReviewContent() {
   const uid = useUserStore((s) => s.uid);
   const isGuest = !uid;
   const [items, setItems] = useState<ReviewItem[]>([]);
+  const [retrySubject, setRetrySubject] = useState<string>("");
 
   useEffect(() => {
     if (game.status !== "finished") {
@@ -201,6 +202,9 @@ function ReviewContent() {
       };
     });
     setItems(built);
+    // Get the first unique subject from failed questions
+    const subjects = [...new Set(wrongAnswers.map((a) => game.questions.find((q) => q.id === a.question_id)?.subject).filter(Boolean))];
+    setRetrySubject(subjects[0] ?? "");
   }, [game.status, game.answers, game.questions, router]);
 
   const fetchExplanation = async (i: number) => {
@@ -268,8 +272,17 @@ function ReviewContent() {
             fullWidth
             size="lg"
             onClick={() => {
-              const subject = retrySubjects[0] ?? "";
-              router.push(`/quiz?subject=${subject}`);
+              // Preserve game mode and subject when retrying
+              const params = new URLSearchParams();
+              params.set("mode", game.mode === "exam_simulation" ? "exam_simulation" : "solo_practice");
+              params.set("track", game.track);
+              params.set("subject", retrySubject);
+              params.set("difficulty", game.difficulty);
+              // If it was a mock exam with essays, retry with essays only
+              if (game.mode === "exam_simulation") {
+                params.set("type", "essay");
+              }
+              router.push(`/quiz?${params.toString()}`);
             }}
           >
             🔁 Retry These Questions

@@ -63,7 +63,8 @@
       "Bash(git restore *)",
       "WebSearch",
       "WebFetch(domain:legaldigitalng.com)",
-      "Bash(Start-Sleep -Seconds 8)"
+      "Bash(Start-Sleep -Seconds 8)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
     ]
   }
 }
