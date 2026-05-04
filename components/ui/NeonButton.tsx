@@ -24,6 +24,7 @@ interface Props {
   size?: "sm" | "md" | "lg";
   glow?: boolean;
   type?: "button" | "submit" | "reset";
+  title?: string;
 }
 
 const sizes = { 
@@ -33,7 +34,7 @@ const sizes = {
 };
 
 export function NeonButton({
-  children, variant = "cyan", className, onClick, disabled, fullWidth, size = "md", glow = true, type = "button"
+  children, variant = "cyan", className, onClick, disabled, fullWidth, size = "md", glow = true, type = "button", title
 }: Props) {
   return (
     <motion.button
@@ -42,6 +43,7 @@ export function NeonButton({
       onClick={onClick}
       disabled={disabled}
       type={type}
+      title={title}
       className={cn(
         "relative font-bold tracking-widest uppercase transition-all duration-300",
         "disabled:opacity-40 disabled:cursor-not-allowed border",
