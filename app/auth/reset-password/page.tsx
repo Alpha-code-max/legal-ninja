@@ -34,12 +34,12 @@ function ResetPasswordContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-6 sm:py-12">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 22 }}
-        className="cyber-card p-8 w-full max-w-md space-y-6"
+        className="cyber-card p-6 sm:p-8 w-full max-w-md space-y-4 sm:space-y-6"
       >
         <div className="text-center space-y-1">
           <div className="text-4xl">🔑</div>

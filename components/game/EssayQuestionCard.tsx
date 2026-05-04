@@ -20,8 +20,12 @@ export function EssayQuestionCard({ question, questionNumber, total, onAnswer, d
     startTimeRef.current = Date.now();
   }, [question.id]);
 
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const minWords = 10;
+  const isValid = wordCount >= minWords && !disabled;
+
   const handleSubmit = () => {
-    if (!text.trim() || disabled) return;
+    if (!isValid) return;
     onAnswer(text.trim(), Date.now() - startTimeRef.current);
   };
 
@@ -63,19 +67,22 @@ export function EssayQuestionCard({ question, questionNumber, total, onAnswer, d
           style={{ color: "var(--text-base)" }}
         />
         <div className="flex justify-between items-center text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
-          <span>Word count: {text.trim() ? text.trim().split(/\s+/).length : 0}</span>
+          <span style={{ color: wordCount < minWords && text.trim() ? "var(--cyber-red)" : "var(--text-muted)" }}>
+            Word count: {wordCount} {wordCount < minWords && text.trim() ? `(min ${minWords})` : ""}
+          </span>
           <span>{text.length} characters</span>
         </div>
       </div>
 
-      <NeonButton 
-        variant="purple" 
-        fullWidth 
-        size="lg" 
+      <NeonButton
+        variant="purple"
+        fullWidth
+        size="lg"
         onClick={handleSubmit}
-        disabled={!text.trim() || disabled}
+        disabled={!isValid}
+        title={wordCount < minWords ? `Minimum ${minWords} words required` : ""}
       >
-        Submit Response
+        {wordCount < minWords ? `Submit Response (${minWords - wordCount} more words)` : "Submit Response"}
       </NeonButton>
     </motion.div>
   );

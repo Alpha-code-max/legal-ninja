@@ -31,6 +31,7 @@ router.post("/guest-next", validate(GenerateSchema), async (req: Request, res) =
       source:     req.body.source ?? "mixed",
       year:       req.body.year,
       mode:       req.body.mode,
+      type:       req.body.type,
     });
     if (questions.length === 0) {
       res.status(503).json({ error: "BANK_EMPTY" });
@@ -69,6 +70,7 @@ router.post("/next", requireAuth, validate(GenerateSchema), async (req: Request,
       source:     req.body.source ?? "mixed",
       year:       req.body.year,
       mode:       req.body.mode,
+      type:       req.body.type,
     });
 
     if (questions.length === 0) {

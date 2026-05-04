@@ -59,7 +59,11 @@
       "Bash(pkill -f \"node\\\\|next\")",
       "Bash(lsof -ti:3000,3001)",
       "Bash(xargs kill *)",
-      "PowerShell(taskkill *)"
+      "PowerShell(taskkill *)",
+      "Bash(git restore *)",
+      "WebSearch",
+      "WebFetch(domain:legaldigitalng.com)",
+      "Bash(Start-Sleep -Seconds 8)"
     ]
   }
 }
