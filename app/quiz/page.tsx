@@ -484,7 +484,7 @@ function QuizContent() {
               {GAME_SETTINGS.difficulty_levels.map((d) => {
                 const dm = DIFF_META[d];
                 const isAvailable = !availability || availability[d]?.[selectedType] !== false;
-                const isDisabled = availability && !availability[d]?.[selectedType];
+                const isDisabled = !!(availability && !availability[d]?.[selectedType]);
                 return (
                   <button
                     key={d}
