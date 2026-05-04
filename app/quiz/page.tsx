@@ -15,6 +15,7 @@ import { getFallbackQuestions } from "@/lib/data/fallback-questions";
 import type { Difficulty, GameModeId } from "@/lib/config/game-settings";
 import type { TrackId } from "@/lib/config/tracks";
 import { GAME_SETTINGS } from "@/lib/config/game-settings";
+import { TRACKS } from "@/lib/config/tracks";
 import { cn } from "@/lib/utils";
 
 // ─── BUBBLE POP ───
@@ -75,6 +76,12 @@ const SOURCE_OPTIONS = [
   { id: "mixed", label: "Mixed",      emoji: "🎲", color: "purple", desc: "Both pools" },
   { id: "past",  label: "Past Exams", emoji: "📚", color: "gold",   desc: "Real exam questions" },
   { id: "ai",    label: "AI Gen",     emoji: "🤖", color: "cyan",   desc: "From study materials" },
+] as const;
+
+const TYPE_OPTIONS = [
+  { id: "mixed", label: "Mixed",  emoji: "🎲", color: "purple", desc: "MCQ & Essay" },
+  { id: "mcq",   label: "MCQ",    emoji: "✓",  color: "cyan",   desc: "Multiple choice" },
+  { id: "essay", label: "Essay",  emoji: "✍️",  color: "gold",   desc: "Written response" },
 ] as const;
 
 function QuizContent() {
@@ -414,6 +421,42 @@ function QuizContent() {
             </div>
           )}
 
+          {/* Subject selector for Mock Exams */}
+          {mode === "exam_simulation" && (
+            <div>
+              <p className="text-[10px] uppercase tracking-widest font-black mb-2" style={{ color: "var(--text-muted)" }}>Select Subject (Optional)</p>
+              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                <button
+                  onClick={() => setSelectedSubject("")}
+                  className={cn(
+                    "py-2.5 rounded-xl text-xs font-bold border transition-all",
+                    !selectedSubject
+                      ? "border-cyber-cyan text-cyber-cyan shadow-neon-cyan bg-cyber-cyan/10"
+                      : "border-cyber-border hover:border-cyber-cyan/50"
+                  )}
+                  style={{ color: !selectedSubject ? "var(--cyber-cyan)" : "var(--text-muted)" }}
+                >
+                  Mixed
+                </button>
+                {TRACKS[track as TrackId]?.subjects.map((subj) => (
+                  <button
+                    key={subj.id}
+                    onClick={() => setSelectedSubject(subj.id)}
+                    className={cn(
+                      "py-2.5 rounded-xl text-xs font-bold border transition-all",
+                      selectedSubject === subj.id
+                        ? "border-cyber-purple text-cyber-purple shadow-neon-purple bg-cyber-purple/10"
+                        : "border-cyber-border hover:border-cyber-purple/50"
+                    )}
+                    style={{ color: selectedSubject === subj.id ? "var(--cyber-purple)" : "var(--text-muted)" }}
+                  >
+                    {subj.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Difficulty */}
           <div>
             <p className="text-[10px] uppercase tracking-widest font-black mb-2" style={{ color: "var(--text-muted)" }}>Difficulty</p>
@@ -454,6 +497,28 @@ function QuizContent() {
                   <span className="text-lg">{s.emoji}</span>
                   <span>{s.label}</span>
                   <span className="text-[9px] opacity-60">{s.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Question Type (MCQ vs Essay) */}
+          <div>
+            <p className="text-[10px] uppercase tracking-widest font-black mb-2" style={{ color: "var(--text-muted)" }}>Question Type</p>
+            <div className="grid grid-cols-3 gap-2">
+              {TYPE_OPTIONS.map((t) => (
+                <button key={t.id} onClick={() => setSelectedType(t.id)}
+                  className={cn(
+                    "py-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1",
+                    selectedType === t.id
+                      ? `border-cyber-${t.color} bg-cyber-${t.color}/10 shadow-neon-${t.color}`
+                      : "border-cyber-border hover:border-cyber-cyan/50"
+                  )}
+                  style={{ color: selectedType === t.id ? `var(--cyber-${t.color})` : "var(--text-muted)" }}
+                >
+                  <span className="text-lg">{t.emoji}</span>
+                  <span>{t.label}</span>
+                  <span className="text-[9px] opacity-60">{t.desc}</span>
                 </button>
               ))}
             </div>
