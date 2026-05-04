@@ -180,7 +180,8 @@ function QuizContent() {
       }
       if (msg === "BANK_EMPTY") {
         setPhase("setup");
-        setLoadError("No questions have been uploaded for this subject yet. Please check back later or choose a different subject.");
+        const typeMsg = selectedType === "essay" ? " essay" : "";
+        setLoadError(`No${typeMsg} questions available for this subject yet. Please choose a different subject, difficulty level, or question type.`);
         return { question: null, fromOffline: false };
       }
       const isSpecificSubject = subj && subj !== track;
