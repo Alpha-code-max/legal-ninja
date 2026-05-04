@@ -128,9 +128,14 @@ export default function AdminPage() {
       const res = await adminApi.generateMixed(adminKey, subjectId, subject.track, 10);
       const mcqCount = res.created.filter((q: any) => q.type === "mcq").length;
       const essayCount = res.created.filter((q: any) => q.type === "essay").length;
-      setMsg(subjectId, `✓ Generated ${mcqCount} MCQs + ${essayCount} essays. Refreshing…`);
-      clearMsg(subjectId, 8000);
-      setTimeout(() => refreshBanks(), 2000);
+      setMsg(subjectId, `✓ Generated ${mcqCount} MCQs + ${essayCount} essays. Updating…`);
+
+      // Wait 5 seconds for database to process all writes before refreshing
+      setTimeout(async () => {
+        await refreshBanks();
+        setMsg(subjectId, `✓ Done! Updated question bank.`);
+        clearMsg(subjectId, 5000);
+      }, 5000);
     } catch (err) {
       setMsg(subjectId, `❌ ${err instanceof Error ? err.message : "Failed"}`);
       clearMsg(subjectId, 5000);

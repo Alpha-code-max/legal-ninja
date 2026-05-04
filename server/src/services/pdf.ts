@@ -302,18 +302,29 @@ export async function getQuestionBankStats(): Promise<
     { $group: {
         _id: "$_id.subject",
         total: { $sum: "$count" },
-        difficulties: { $push: { k: "$_id.difficulty", v: "$count" } },
-        types: { $push: { k: "$_id.type", v: "$count" } },
+        difficultyCounts: { $push: { difficulty: "$_id.difficulty", type: "$_id.type", count: "$count" } },
+        typeCounts: { $push: { type: "$_id.type", count: "$count" } },
     }},
     { $sort: { _id: 1 } },
   ]);
 
   return result.map((r) => {
-    const typeMap = Object.fromEntries((r.types as { k: string; v: number }[]).map((d) => [d.k, d.v]));
+    // Sum counts by difficulty (across all types)
+    const difficultyMap: Record<string, number> = {};
+    (r.difficultyCounts as { difficulty: string; type: string; count: number }[]).forEach((item) => {
+      difficultyMap[item.difficulty] = (difficultyMap[item.difficulty] ?? 0) + item.count;
+    });
+
+    // Sum counts by type
+    const typeMap: Record<string, number> = {};
+    (r.typeCounts as { type: string; count: number }[]).forEach((item) => {
+      typeMap[item.type] = (typeMap[item.type] ?? 0) + item.count;
+    });
+
     return {
       subject:       r._id as string,
       total:         r.total as number,
-      by_difficulty: Object.fromEntries((r.difficulties as { k: string; v: number }[]).map((d) => [d.k, d.v])),
+      by_difficulty: difficultyMap,
       by_type:       typeMap,
       essays:        typeMap.essay ?? 0,
     };
