@@ -155,12 +155,23 @@ router.get("/availability/:subject", async (req: Request, res) => {
     for (const difficulty of difficulties) {
       availability[difficulty] = {};
       for (const type of types) {
-        const exists = await Question.countDocuments({
+        let query: any = {
           subject,
           difficulty,
-          type,
           approved: { $ne: false },
-        });
+        };
+
+        if (type === "essay") {
+          query.type = "essay";
+        } else {
+          // MCQs: either type is "mcq" OR type field is missing (legacy questions)
+          query.$or = [
+            { type: "mcq" },
+            { type: { $exists: false } },
+          ];
+        }
+
+        const exists = await Question.countDocuments(query);
         availability[difficulty][type] = exists > 0;
       }
     }
