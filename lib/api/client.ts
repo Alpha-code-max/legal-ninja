@@ -105,6 +105,9 @@ export const api = {
   getExplanation: (body: { question: string; wrong_answer: string; correct_answer: string; subject: string }) =>
     request<{ explanation: string }>("/questions/explain", { method: "POST", body: JSON.stringify(body) }),
 
+  checkAvailability: (subject: string) =>
+    request<{ subject: string; availability: Record<string, Record<string, boolean>> }>(`/questions/availability/${subject}`),
+
   // Sessions
   startSession: (body: { mode: string; track: string; subject?: string; difficulty: string; time_limit_mins: number; question_count: number }) =>
     request<{ session_id: string }>("/sessions/start", { method: "POST", body: JSON.stringify(body) }),

@@ -234,6 +234,25 @@ function DashboardContent() {
   const trackData = TRACKS[track as keyof typeof TRACKS] ?? TRACKS.law_school_track;
   const xpToNext = nextLevel ? nextLevel.xp_required - user.xp : 0;
 
+  const [availability, setAvailability] = useState<Record<string, { easy: { mcq: boolean; essay: boolean }; medium: { mcq: boolean; essay: boolean }; hard: { mcq: boolean; essay: boolean }; expert: { mcq: boolean; essay: boolean } }>>({});
+
+  // Fetch availability for all subjects
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      const avail: typeof availability = {};
+      for (const subject of trackData.subjects) {
+        try {
+          const res = await api.checkAvailability(subject.id);
+          avail[subject.id] = res.availability;
+        } catch {
+          // Silently fail - availability not critical
+        }
+      }
+      setAvailability(avail);
+    };
+    fetchAvailability();
+  }, [trackData.subjects]);
+
   const handleAction = (id: string) => {
     if (id === "store") { router.push("/store"); return; }
     if (id === "duel" || id === "battle_royale") {
@@ -431,22 +450,35 @@ function DashboardContent() {
                     </span>
                   </button>
                   <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}&type=mcq`)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
-                      style={{ background: "color-mix(in srgb, var(--cyber-cyan) 15%, transparent)", color: "var(--cyber-cyan)" }}
-                      title="Multiple Choice"
-                    >
-                      📝 MCQ
-                    </button>
-                    <button
-                      onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}&type=essay&difficulty=medium`)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
-                      style={{ background: "color-mix(in srgb, var(--cyber-purple) 15%, transparent)", color: "var(--cyber-purple)" }}
-                      title="Essay Questions"
-                    >
-                      ✏️ Essay
-                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}&type=mcq`)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                        style={{ background: "color-mix(in srgb, var(--cyber-cyan) 15%, transparent)", color: "var(--cyber-cyan)" }}
+                        title="Multiple Choice"
+                      >
+                        📝 MCQ
+                      </button>
+                      {availability[subject.id]?.medium?.mcq && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyber-cyan" title="Available"></div>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <button
+                        onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}&type=essay&difficulty=medium`)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                        style={{ background: "color-mix(in srgb, var(--cyber-purple) 15%, transparent)", color: "var(--cyber-purple)" }}
+                        title={availability[subject.id]?.medium?.essay ? "Essay Questions (Available)" : "Essay Questions (Coming Soon)"}
+                      >
+                        ✏️ Essay
+                      </button>
+                      {availability[subject.id]?.medium?.essay && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyber-purple" title="Available"></div>
+                      )}
+                      {availability[subject.id] && !availability[subject.id].medium.essay && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-gray-600 opacity-40" title="Not available yet"></div>
+                      )}
+                    </div>
                     <Lucide.ChevronRight size={14} className="opacity-30"
                                          style={{ color: icon.color }} />
                   </div>

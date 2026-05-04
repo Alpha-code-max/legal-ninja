@@ -137,4 +137,39 @@ router.get("/years", async (req: Request, res) => {
   }
 });
 
+// ─── Check question availability for a subject (public) ──────────────────────
+// Returns which difficulty levels have MCQ and essay questions for a subject
+router.get("/availability/:subject", async (req: Request, res) => {
+  try {
+    const { subject } = req.params;
+    if (!subject || subject === "mixed") {
+      res.status(400).json({ error: "Invalid subject" });
+      return;
+    }
+
+    const difficulties = ["easy", "medium", "hard", "expert"];
+    const types = ["mcq", "essay"];
+
+    const availability: Record<string, Record<string, boolean>> = {};
+
+    for (const difficulty of difficulties) {
+      availability[difficulty] = {};
+      for (const type of types) {
+        const exists = await Question.countDocuments({
+          subject,
+          difficulty,
+          type,
+          approved: { $ne: false },
+        });
+        availability[difficulty][type] = exists > 0;
+      }
+    }
+
+    res.json({ subject, availability });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to check availability" });
+  }
+});
+
 export default router;

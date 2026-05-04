@@ -115,6 +115,7 @@ function QuizContent() {
   const [combo, setCombo]                   = useState(0);
   const [dailyBlocked, setDailyBlocked]     = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>("mixed");
+  const [availability, setAvailability] = useState<Record<string, Record<string, boolean>> | null>(null);
 
   const game = useGameStore();
   const user = useUserStore();
@@ -134,6 +135,23 @@ function QuizContent() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch availability for specific subject
+  useEffect(() => {
+    if (!selectedSubject || selectedSubject === track) {
+      setAvailability(null);
+      return;
+    }
+    const fetchAvailability = async () => {
+      try {
+        const res = await api.checkAvailability(selectedSubject);
+        setAvailability(res.availability);
+      } catch {
+        setAvailability(null);
+      }
+    };
+    fetchAvailability();
+  }, [selectedSubject]);
 
   // Countdown tick — fires nextAction when it hits 0
   useEffect(() => {
@@ -180,8 +198,9 @@ function QuizContent() {
       }
       if (msg === "BANK_EMPTY") {
         setPhase("setup");
-        const typeMsg = selectedType === "essay" ? " essay" : "";
-        setLoadError(`No${typeMsg} questions available for this subject yet. Please choose a different subject, difficulty level, or question type.`);
+        const typeMsg = selectedType === "essay" ? ` ${selectedType}` : "";
+        const diffMsg = selectedDifficulty ? ` ${selectedDifficulty}` : "";
+        setLoadError(`No${typeMsg} questions available for${diffMsg} difficulty in this subject. Try a different difficulty level or question type.`);
         return { question: null, fromOffline: false };
       }
       const isSpecificSubject = subj && subj !== track;
@@ -464,17 +483,25 @@ function QuizContent() {
             <div className="grid grid-cols-4 gap-2">
               {GAME_SETTINGS.difficulty_levels.map((d) => {
                 const dm = DIFF_META[d];
+                const isAvailable = !availability || availability[d]?.[selectedType] !== false;
+                const isDisabled = availability && !availability[d]?.[selectedType];
                 return (
-                  <button key={d} onClick={() => setSelectedDifficulty(d)}
+                  <button
+                    key={d}
+                    onClick={() => setSelectedDifficulty(d)}
+                    disabled={isDisabled}
                     className={cn(
-                      "py-2.5 rounded-xl text-xs font-bold border transition-all capitalize flex flex-col items-center gap-0.5",
-                      selectedDifficulty === d
+                      "py-2.5 rounded-xl text-xs font-bold border transition-all capitalize flex flex-col items-center gap-0.5 relative",
+                      isDisabled && "opacity-40 cursor-not-allowed",
+                      selectedDifficulty === d && !isDisabled
                         ? "border-cyber-cyan bg-cyber-cyan/10 shadow-neon-cyan"
                         : "border-cyber-border hover:border-cyber-cyan/50"
                     )}
                     style={{ color: selectedDifficulty === d ? "var(--cyber-cyan)" : "var(--text-muted)" }}
+                    title={isDisabled ? `No ${selectedType} questions for ${d} difficulty` : ""}
                   >
                     <span>{dm?.label ?? d}</span>
+                    {isAvailable && <span className="text-[8px] text-cyber-green">✓</span>}
                   </button>
                 );
               })}
