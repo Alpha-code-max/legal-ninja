@@ -295,21 +295,27 @@ export async function extractPastQuestionsFromPdf(params: {
 
 // ─── Bank stats per subject ───────────────────────────────────────────────────
 export async function getQuestionBankStats(): Promise<
-  { subject: string; total: number; by_difficulty: Record<string, number> }[]
+  { subject: string; total: number; by_difficulty: Record<string, number>; by_type: Record<string, number>; essays: number }[]
 > {
   const result = await Question.aggregate([
-    { $group: { _id: { subject: "$subject", difficulty: "$difficulty" }, count: { $sum: 1 } } },
+    { $group: { _id: { subject: "$subject", difficulty: "$difficulty", type: "$type" }, count: { $sum: 1 } } },
     { $group: {
         _id: "$_id.subject",
         total: { $sum: "$count" },
         difficulties: { $push: { k: "$_id.difficulty", v: "$count" } },
+        types: { $push: { k: "$_id.type", v: "$count" } },
     }},
     { $sort: { _id: 1 } },
   ]);
 
-  return result.map((r) => ({
-    subject:       r._id as string,
-    total:         r.total as number,
-    by_difficulty: Object.fromEntries((r.difficulties as { k: string; v: number }[]).map((d) => [d.k, d.v])),
-  }));
+  return result.map((r) => {
+    const typeMap = Object.fromEntries((r.types as { k: string; v: number }[]).map((d) => [d.k, d.v]));
+    return {
+      subject:       r._id as string,
+      total:         r.total as number,
+      by_difficulty: Object.fromEntries((r.difficulties as { k: string; v: number }[]).map((d) => [d.k, d.v])),
+      by_type:       typeMap,
+      essays:        typeMap.essay ?? 0,
+    };
+  });
 }

@@ -6,7 +6,7 @@ import { adminApi, type PdfDocument, type AdminStats } from "@/lib/api/admin";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { cn } from "@/lib/utils";
 
-type BankStat = { subject: string; total: number; by_difficulty: Record<string, number> };
+type BankStat = { subject: string; total: number; by_difficulty: Record<string, number>; by_type: Record<string, number>; essays: number };
 
 const SUBJECTS = [
   { id: "civil_procedure",    label: "Civil Procedure",    track: "law_school_track"    },
@@ -120,12 +120,17 @@ export default function AdminPage() {
   };
 
   const handleRegenerate = async (subjectId: string) => {
-    setMsg(subjectId, "⏳ Generating questions from uploaded PDFs…");
+    setMsg(subjectId, "⏳ Generating MCQ and essay questions…");
     try {
-      const res = await adminApi.regenerateSubject(adminKey, subjectId);
-      setMsg(subjectId, res.message);
+      const subject = SUBJECTS.find((s) => s.id === subjectId);
+      if (!subject) throw new Error("Subject not found");
+
+      const res = await adminApi.generateMixed(adminKey, subjectId, subject.track, 10);
+      const mcqCount = res.created.filter((q: any) => q.type === "mcq").length;
+      const essayCount = res.created.filter((q: any) => q.type === "essay").length;
+      setMsg(subjectId, `✓ Generated ${mcqCount} MCQs + ${essayCount} essays. Refreshing…`);
       clearMsg(subjectId, 8000);
-      if (res.started) setTimeout(() => refreshBanks(), 10000);
+      setTimeout(() => refreshBanks(), 2000);
     } catch (err) {
       setMsg(subjectId, `❌ ${err instanceof Error ? err.message : "Failed"}`);
       clearMsg(subjectId, 5000);
@@ -523,18 +528,35 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Difficulty breakdown */}
+                  {/* MCQ Difficulty breakdown */}
                   {total > 0 && bank?.by_difficulty && (
-                    <div className="flex gap-2">
-                      {["easy", "medium", "hard", "expert"].map((d) => (
-                        <div key={d} className="flex-1 text-center py-1.5 rounded-lg text-[9px] font-black uppercase"
-                          style={{ background: "var(--cyber-border)", color: "var(--text-muted)" }}>
-                          <p className="text-xs font-black font-mono" style={{ color: "var(--cyber-cyan)" }}>
-                            {bank.by_difficulty[d] ?? 0}
-                          </p>
-                          {d[0].toUpperCase()}
-                        </div>
-                      ))}
+                    <div className="space-y-2">
+                      <p className="text-[9px] uppercase tracking-widest font-black" style={{ color: "var(--text-muted)" }}>MCQ by difficulty:</p>
+                      <div className="flex gap-2">
+                        {["easy", "medium", "hard", "expert"].map((d) => {
+                          const label = d === "easy" ? "Easy" : d === "medium" ? "Med" : d === "hard" ? "Hard" : "Exp";
+                          return (
+                            <div key={d} className="flex-1 text-center py-1.5 rounded-lg text-[9px] font-black uppercase"
+                              style={{ background: "var(--cyber-border)", color: "var(--text-muted)" }}>
+                              <p className="text-xs font-black font-mono" style={{ color: "var(--cyber-cyan)" }}>
+                                {bank.by_difficulty[d] ?? 0}
+                              </p>
+                              {label}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Essay count */}
+                  {total > 0 && bank && (
+                    <div className="flex items-center justify-between px-2 py-1.5 rounded-lg text-[9px] font-black"
+                      style={{ background: "var(--cyber-border)", color: "var(--text-muted)" }}>
+                      <span>Essays:</span>
+                      <p className="text-xs font-black font-mono" style={{ color: bank.essays > 0 ? "var(--cyber-green)" : "var(--text-muted)" }}>
+                        {bank.essays}
+                      </p>
                     </div>
                   )}
 

@@ -66,7 +66,7 @@ export const adminApi = {
     ),
 
   getBankStats: (key: string) =>
-    adminRequest<{ subject: string; total: number; by_difficulty: Record<string, number> }[]>(
+    adminRequest<{ subject: string; total: number; by_difficulty: Record<string, number>; by_type: Record<string, number>; essays: number }[]>(
       `/admin/banks`, {}, key
     ),
 
@@ -81,6 +81,13 @@ export const adminApi = {
   regenerateSubject: (key: string, subject: string) =>
     adminRequest<{ started: boolean; documents_found?: number; message: string }>(
       `/admin/questions/regenerate/${subject}`, { method: "POST" }, key
+    ),
+
+  generateMixed: (key: string, subject: string, track: string, count: number = 10) =>
+    adminRequest<{ created: any[]; type: string }>(
+      `/admin/questions/generate`,
+      { method: "POST", body: JSON.stringify({ subject, track, difficulty: "medium", count, type: "mixed" }) },
+      key
     ),
 
   importPastQuestions: async (key: string, params: {
