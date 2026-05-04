@@ -435,7 +435,7 @@ function DashboardContent() {
                       📝 MCQ
                     </button>
                     <button
-                      onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}&type=essay`)}
+                      onClick={() => router.push(`/quiz?mode=exam_simulation&track=${track}&subject=${subject.id}&type=essay`)}
                       className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                       style={{ background: "color-mix(in srgb, var(--cyber-purple) 15%, transparent)", color: "var(--cyber-purple)" }}
                       title="Essay Questions"

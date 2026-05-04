@@ -6,6 +6,8 @@ import { submitAnswer, endGameSession } from "../services/game";
 import { GameSession } from "../models/GameSession";
 import { Question } from "../models/Question";
 import { generateDeepExplanation } from "../services/ai";
+import { isSubjectAllowed } from "../config/subjects";
+import { User } from "../models/User";
 import mongoose from "mongoose";
 
 const router = Router();
@@ -31,6 +33,17 @@ const AnswerSchema = z.object({
 router.post("/start", requireAuth, validate(StartSchema), async (req: Request, res) => {
   try {
     const { mode, track, subject, difficulty, time_limit_mins, question_count } = req.body as z.infer<typeof StartSchema>;
+
+    // Validate subject by user role
+    if (subject && subject !== "mixed") {
+      const user = await User.findById(req.user!.uid).select("role").lean();
+      const role = (user as any)?.role ?? "law_student";
+      if (!isSubjectAllowed(subject, role)) {
+        res.status(403).json({ error: "SUBJECT_NOT_ALLOWED" });
+        return;
+      }
+    }
+
     const session = await GameSession.create({
       user_id:        new mongoose.Types.ObjectId(req.user!.uid),
       mode, track,
