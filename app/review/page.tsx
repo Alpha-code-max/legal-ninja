@@ -272,14 +272,15 @@ function ReviewContent() {
             fullWidth
             size="lg"
             onClick={() => {
-              // Preserve game mode and subject when retrying
+              // Preserve game context when retrying
               const params = new URLSearchParams();
-              params.set("mode", game.mode === "exam_simulation" ? "exam_simulation" : "solo_practice");
+              params.set("mode", "solo_practice");
               params.set("track", game.track);
               params.set("subject", retrySubject);
               params.set("difficulty", game.difficulty);
-              // If it was a mock exam with essays, retry with essays only
-              if (game.mode === "exam_simulation") {
+              // If retrying essay questions, request essay type
+              const hasEssays = game.questions.some(q => q.type === "essay");
+              if (hasEssays) {
                 params.set("type", "essay");
               }
               router.push(`/quiz?${params.toString()}`);
