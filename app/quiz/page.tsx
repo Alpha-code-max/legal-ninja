@@ -56,32 +56,32 @@ function BubblePop({ correct, id }: { correct: boolean; id: number }) {
 }
 
 const MODE_META: Record<string, { label: string; emoji: string; desc: string; xp: string; color: string }> = {
-  solo_practice:   { label: "Solo Practice",    emoji: "⚔️",  desc: "🎮 Train privately at your own pace",         xp: "1.0×", color: "cyan" },
-  duel:            { label: "1v1 Duel",          emoji: "🥊",  desc: "⚡ Challenge another student live",    xp: "1.3×", color: "purple" },
-  battle_royale:   { label: "Battle Royale",     emoji: "🏆",  desc: "🔥 Last ninja standing wins",                  xp: "1.8×", color: "gold" },
-  daily_challenge: { label: "Daily Challenge",   emoji: "🎯",  desc: "⏰ Today's timed challenge — one attempt",     xp: "1.5×", color: "green" },
-  weak_area_focus: { label: "Weak Area Grind",   emoji: "🔥",  desc: "💪 Targeted questions on weak subjects",  xp: "1.2×", color: "red" },
-  flashcard_review:{ label: "Flashcard Review",  emoji: "📚",  desc: "🧠 Spaced repetition learning",                xp: "0.8×", color: "cyan" },
-  exam_simulation: { label: "Mock Exam",         emoji: "🎓",  desc: "📝 MCQ & Essay under exam conditions",   xp: "2.0×", color: "purple" },
+  solo_practice:   { label: "Solo Practice",    emoji: "⚔️",  desc: "Train privately at your own pace",         xp: "1.0×", color: "cyan" },
+  duel:            { label: "1v1 Duel",          emoji: "🥊",  desc: "Challenge another student in real time",    xp: "1.3×", color: "purple" },
+  battle_royale:   { label: "Battle Royale",     emoji: "🏆",  desc: "Last ninja standing wins",                  xp: "1.8×", color: "gold" },
+  daily_challenge: { label: "Daily Challenge",   emoji: "🎯",  desc: "Today's timed challenge — one attempt",     xp: "1.5×", color: "green" },
+  weak_area_focus: { label: "Weak Area Grind",   emoji: "🔥",  desc: "Targeted questions on your weak subjects",  xp: "1.2×", color: "red" },
+  flashcard_review:{ label: "Flashcard Review",  emoji: "📚",  desc: "Spaced repetition learning",                xp: "0.8×", color: "cyan" },
+  exam_simulation: { label: "Mock Exam",         emoji: "🎓",  desc: "Mixed MCQ & Essay under exam conditions",   xp: "2.0×", color: "purple" },
 };
 
 const DIFF_META: Record<string, { label: string; color: string; desc: string }> = {
-  easy:   { label: "Rookie 🥚",   color: "text-green-400",          desc: "🌱 Foundation concepts" },
-  medium: { label: "Counsel ⚖️",  color: "neon-text-cyan",          desc: "📖 Standard bar questions" },
-  hard:   { label: "Silk 👔",     color: "text-cyber-purple",       desc: "🎯 Senior advocate level" },
-  expert: { label: "Legend 👑",   color: "text-cyber-gold",         desc: "🏛️ Supreme court material" },
+  easy:   { label: "Rookie",   color: "text-green-400",          desc: "Foundation concepts" },
+  medium: { label: "Counsel",  color: "neon-text-cyan",          desc: "Standard bar questions" },
+  hard:   { label: "Silk",     color: "text-cyber-purple",       desc: "Senior advocate level" },
+  expert: { label: "Legend",   color: "text-cyber-gold",         desc: "Supreme court material" },
 };
 
 const SOURCE_OPTIONS = [
-  { id: "mixed", label: "🎲 Mixed",      emoji: "🎲", color: "purple", desc: "🌟 Both pools" },
-  { id: "past",  label: "📚 Real Exams", emoji: "📚", color: "gold",   desc: "🏆 Actual past papers" },
-  { id: "ai",    label: "🤖 AI-Gen",     emoji: "🤖", color: "cyan",   desc: "🧠 Generated content" },
+  { id: "mixed", label: "Mixed",      emoji: "🎲", color: "purple", desc: "Both pools" },
+  { id: "past",  label: "Past Exams", emoji: "📚", color: "gold",   desc: "Real exam questions" },
+  { id: "ai",    label: "AI Gen",     emoji: "🤖", color: "cyan",   desc: "From study materials" },
 ] as const;
 
 const TYPE_OPTIONS = [
-  { id: "mixed", label: "🎲 Mixed",  emoji: "🎲", color: "purple", desc: "📝 MCQ & Essay" },
-  { id: "mcq",   label: "✓ MCQ",    emoji: "✓",  color: "cyan",   desc: "🔘 Multiple choice" },
-  { id: "essay", label: "✍️ Essay",  emoji: "✍️",  color: "gold",   desc: "📄 Written response" },
+  { id: "mixed", label: "Mixed",  emoji: "🎲", color: "purple", desc: "MCQ & Essay" },
+  { id: "mcq",   label: "MCQ",    emoji: "✓",  color: "cyan",   desc: "Multiple choice" },
+  { id: "essay", label: "Essay",  emoji: "✍️",  color: "gold",   desc: "Written response" },
 ] as const;
 
 function QuizContent() {

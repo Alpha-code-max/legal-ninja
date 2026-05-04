@@ -20,12 +20,12 @@ import { cn } from "@/lib/utils";
 import * as Lucide from "lucide-react";
 
 const QUICK_ACTIONS = [
-  { id: "solo_practice",   label: "Solo",     icon: "Sword",        color: "cyan",   emoji: "⚔️",  desc: "🎮 Train alone" },
-  { id: "duel",            label: "Duel",     icon: "ShieldAlert",  color: "purple", emoji: "🥊",  desc: "👊 1v1 battle" },
-  { id: "battle_royale",   label: "Royale",   icon: "Trophy",       color: "gold",   emoji: "🏆",  desc: "🌟 4-way war" },
-  { id: "daily_challenge", label: "Daily",    icon: "Target",       color: "green",  emoji: "🎯",  desc: "⏰ Daily quest" },
-  { id: "exam_simulation", label: "Mock Exam",icon: "GraduationCap",color: "purple", emoji: "🎓",  desc: "📝 Exam time" },
-  { id: "weak_area_focus", label: "Grind",    icon: "BookOpen",     color: "red",    emoji: "🔥",  desc: "💪 Weak areas" },
+  { id: "solo_practice",   label: "Solo",     icon: "Sword",        color: "cyan",   emoji: "⚔️",  desc: "Train alone" },
+  { id: "duel",            label: "Duel",     icon: "ShieldAlert",  color: "purple", emoji: "🥊",  desc: "1v1 battle" },
+  { id: "battle_royale",   label: "Royale",   icon: "Trophy",       color: "gold",   emoji: "🏆",  desc: "4-way war" },
+  { id: "daily_challenge", label: "Daily",    icon: "Target",       color: "green",  emoji: "🎯",  desc: "Daily quest" },
+  { id: "exam_simulation", label: "Mock Exam",icon: "GraduationCap",color: "purple", emoji: "🎓",  desc: "Exam simulation" },
+  { id: "weak_area_focus", label: "Grind",    icon: "BookOpen",     color: "red",    emoji: "🔥",  desc: "Weak areas" },
 ] as const;
 
 const ACTION_GRADIENTS: Record<string, string> = {
@@ -357,7 +357,7 @@ function DashboardContent() {
         {/* Quick Actions Grid */}
         <motion.div variants={itemVars} className="space-y-3">
           <h3 className="text-[10px] font-black uppercase tracking-[0.3em]"
-              style={{ color: "var(--text-muted)" }}>⚔️ Battle Modes</h3>
+              style={{ color: "var(--text-muted)" }}>Battle Modes</h3>
           <div className="grid grid-cols-3 gap-3">
             {QUICK_ACTIONS.map((action) => (
               <motion.button
@@ -403,9 +403,9 @@ function DashboardContent() {
               <div className="flex items-center gap-3">
                 <div className="text-2xl">⚡</div>
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--cyber-gold)" }}>🚀 XP Multipliers</p>
+                  <p className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--cyber-gold)" }}>XP Multipliers</p>
                   <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                    🏆 Royale 1.8× · 🎓 Exam 1.5× · 🥊 Duel 1.3×
+                    Royale 1.8× · Exam 1.5× · Duel 1.3×
                   </p>
                 </div>
               </div>
@@ -418,9 +418,9 @@ function DashboardContent() {
         <motion.div variants={itemVars} className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em]"
-                style={{ color: "var(--text-muted)" }}>🌟 Knowledge Spheres</h3>
+                style={{ color: "var(--text-muted)" }}>Knowledge Spheres</h3>
             <span className="text-[9px] font-bold neon-text-cyan uppercase tracking-wider">
-              📚 {trackData.subjects.length} subjects
+              {trackData.subjects.length} subjects
             </span>
           </div>
           <div className="grid gap-2">
