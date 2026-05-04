@@ -234,7 +234,7 @@ function DashboardContent() {
   const trackData = TRACKS[track as keyof typeof TRACKS] ?? TRACKS.law_school_track;
   const xpToNext = nextLevel ? nextLevel.xp_required - user.xp : 0;
 
-  const [availability, setAvailability] = useState<Record<string, { easy: { mcq: boolean; essay: boolean }; medium: { mcq: boolean; essay: boolean }; hard: { mcq: boolean; essay: boolean }; expert: { mcq: boolean; essay: boolean } }>>({});
+  const [availability, setAvailability] = useState<Record<string, Record<string, Record<string, boolean>>>>({});
 
   // Fetch availability for all subjects
   useEffect(() => {
