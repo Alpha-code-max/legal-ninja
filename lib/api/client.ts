@@ -26,7 +26,17 @@ async function request<T>(
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+  if (!res.ok) {
+    // Format validation errors for better UX
+    if (data.details?.fieldErrors) {
+      const fields = data.details.fieldErrors as Record<string, string[]>;
+      const messages = Object.entries(fields)
+        .map(([field, errors]) => `${field}: ${errors.join(", ")}`)
+        .join("\n");
+      throw new Error(messages);
+    }
+    throw new Error(data.error ?? `HTTP ${res.status}`);
+  }
   return data as T;
 }
 

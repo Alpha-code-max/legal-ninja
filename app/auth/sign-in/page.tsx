@@ -62,7 +62,7 @@ export default function SignInPage() {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 22 }}
-        className="cyber-card p-8 w-full max-md space-y-6"
+        className="cyber-card p-8 w-full max-w-md space-y-6"
       >
         {/* Logo */}
         <div className="text-center space-y-1">
@@ -82,9 +82,14 @@ export default function SignInPage() {
 
         {/* Error */}
         {error && (
-          <div className="rounded-xl p-3 text-sm text-center"
+          <div className="rounded-xl p-3 text-sm"
                style={{ color: "var(--cyber-red)", background: "color-mix(in srgb, var(--cyber-red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-red) 30%, transparent)" }}>
-            {error}
+            <div className="font-bold mb-1">⚠️ {error.includes("Validation") ? "Validation Error" : "Sign In Failed"}</div>
+            <div className="whitespace-pre-wrap text-left text-xs">
+              {error.split("\n").map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
           </div>
         )}
 

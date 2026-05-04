@@ -104,9 +104,14 @@ export default function SignUpPage() {
         </div>
 
         {error && (
-          <div className="rounded-xl p-3 text-sm text-center"
+          <div className="rounded-xl p-3 text-sm"
                style={{ color: "var(--cyber-red)", background: "color-mix(in srgb, var(--cyber-red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-red) 30%, transparent)" }}>
-            {error}
+            <div className="font-bold mb-1">⚠️ Validation Error</div>
+            <div className="whitespace-pre-wrap text-left text-xs">
+              {error.split("\n").map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -179,7 +184,7 @@ export default function SignUpPage() {
             {/* Username */}
             <InputField label="Username" type="text" value={username} onChange={setUsername}
               placeholder="legalwarrior99" autoComplete="username"
-              hint="Letters, numbers, underscores only" />
+              hint="3-30 characters. Letters, numbers, underscores only. No spaces or special chars." />
 
             {/* Email */}
             <InputField label="Email" type="email" value={email} onChange={setEmail}
@@ -188,7 +193,7 @@ export default function SignUpPage() {
             {/* Password */}
             <InputField label="Password" type="password" value={password} onChange={setPassword}
               placeholder="Min 8 characters" autoComplete="new-password"
-              hint="At least 8 characters" />
+              hint="Minimum 8 characters (max 72). Mix of uppercase, lowercase, numbers for security." />
 
             {/* Referral code */}
             <InputField label="Referral Code (optional)" type="text" value={referral} onChange={setReferral}
