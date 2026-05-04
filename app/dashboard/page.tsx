@@ -20,12 +20,12 @@ import { cn } from "@/lib/utils";
 import * as Lucide from "lucide-react";
 
 const QUICK_ACTIONS = [
-  { id: "solo_practice",   label: "Solo",     icon: "Sword",        color: "cyan",   emoji: "⚔️",  desc: "Train alone" },
-  { id: "duel",            label: "Duel",     icon: "ShieldAlert",  color: "purple", emoji: "🥊",  desc: "1v1 battle" },
-  { id: "battle_royale",   label: "Royale",   icon: "Trophy",       color: "gold",   emoji: "🏆",  desc: "4-way war" },
-  { id: "daily_challenge", label: "Daily",    icon: "Target",       color: "green",  emoji: "🎯",  desc: "Daily quest" },
-  { id: "exam_simulation", label: "Mock Exam",icon: "GraduationCap",color: "purple", emoji: "🎓",  desc: "Exam simulation" },
-  { id: "weak_area_focus", label: "Grind",    icon: "BookOpen",     color: "red",    emoji: "🔥",  desc: "Weak areas" },
+  { id: "solo_practice",   label: "Solo",     icon: "Sword",        color: "cyan",   emoji: "⚔️",  desc: "🎮 Train alone" },
+  { id: "duel",            label: "Duel",     icon: "ShieldAlert",  color: "purple", emoji: "🥊",  desc: "👊 1v1 battle" },
+  { id: "battle_royale",   label: "Royale",   icon: "Trophy",       color: "gold",   emoji: "🏆",  desc: "🌟 4-way war" },
+  { id: "daily_challenge", label: "Daily",    icon: "Target",       color: "green",  emoji: "🎯",  desc: "⏰ Daily quest" },
+  { id: "exam_simulation", label: "Mock Exam",icon: "GraduationCap",color: "purple", emoji: "🎓",  desc: "📝 Exam time" },
+  { id: "weak_area_focus", label: "Grind",    icon: "BookOpen",     color: "red",    emoji: "🔥",  desc: "💪 Weak areas" },
 ] as const;
 
 const ACTION_GRADIENTS: Record<string, string> = {
@@ -45,11 +45,16 @@ const SUBJECT_ICONS: Record<string, { emoji: string; color: string }> = {
   legal_ethics:        { emoji: "📜",  color: "var(--cyber-green)" },
   constitutional_law:  { emoji: "🗳️",  color: "var(--cyber-cyan)" },
   evidence_law:        { emoji: "🔬",  color: "var(--cyber-purple)" },
-  law_of_contract:     { emoji: "📋",  color: "var(--cyber-green)" },
-  torts:               { emoji: "⚠️",  color: "var(--cyber-gold)" },
-  criminal_law:        { emoji: "🗡️",  color: "var(--cyber-red)" },
-  equity_and_trusts:   { emoji: "⚖️",  color: "var(--cyber-purple)" },
+  law_of_contract:     { emoji: "🤝",  color: "var(--cyber-green)" },
+  law_of_torts:        { emoji: "💥",  color: "var(--cyber-gold)" },
+  criminal_law:        { emoji: "🔨",  color: "var(--cyber-red)" },
+  equity_and_trusts:   { emoji: "💎",  color: "var(--cyber-purple)" },
   family_law:          { emoji: "👨‍👩‍👧",  color: "var(--cyber-green)" },
+  land_law:            { emoji: "🌍",  color: "var(--cyber-cyan)" },
+  commercial_law:      { emoji: "📈",  color: "var(--cyber-gold)" },
+  public_international: { emoji: "🌐", color: "var(--cyber-purple)" },
+  taxation:            { emoji: "💰",  color: "var(--cyber-red)" },
+  legal_drafting:      { emoji: "✍️",  color: "var(--cyber-cyan)" },
 };
 
 const BAR_SUBJECT_IDS = new Set(["property_law", "civil_procedure", "criminal_procedure", "corporate_law", "legal_ethics"]);
@@ -310,17 +315,17 @@ function DashboardContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] uppercase font-black tracking-widest mb-1"
-                   style={{ color: "var(--text-muted)" }}>Current Sector</p>
-                <h2 className="text-sm font-bold neon-text-cyan">{trackData.name}</h2>
+                   style={{ color: "var(--text-muted)" }}>📍 Current Sector</p>
+                <h2 className="text-sm font-bold neon-text-cyan">🎯 {trackData.name}</h2>
                 {nextLevel && (
                   <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
-                    {xpToNext.toLocaleString()} XP → {nextLevel.name}
+                    ⚡ {xpToNext.toLocaleString()} XP → {nextLevel.name}
                   </p>
                 )}
               </div>
               <div className="text-right">
                 <p className="text-[10px] uppercase font-black tracking-widest mb-1"
-                   style={{ color: "var(--text-muted)" }}>Streak</p>
+                   style={{ color: "var(--text-muted)" }}>🔥 Streak</p>
                 <StreakCounter streak={user.current_streak} />
                 <div className="mt-1">
                   <StreakProtectionBadge streak={user.current_streak} />
@@ -333,7 +338,7 @@ function DashboardContent() {
         {/* Quick Actions Grid */}
         <motion.div variants={itemVars} className="space-y-3">
           <h3 className="text-[10px] font-black uppercase tracking-[0.3em]"
-              style={{ color: "var(--text-muted)" }}>Battle Modes</h3>
+              style={{ color: "var(--text-muted)" }}>⚔️ Battle Modes</h3>
           <div className="grid grid-cols-3 gap-3">
             {QUICK_ACTIONS.map((action) => (
               <motion.button
@@ -379,9 +384,9 @@ function DashboardContent() {
               <div className="flex items-center gap-3">
                 <div className="text-2xl">⚡</div>
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--cyber-gold)" }}>XP Multipliers</p>
+                  <p className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--cyber-gold)" }}>🚀 XP Multipliers</p>
                   <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                    Battle Royale 1.8× · Exam Mode 1.5× · Duel 1.3×
+                    🏆 Royale 1.8× · 🎓 Exam 1.5× · 🥊 Duel 1.3×
                   </p>
                 </div>
               </div>
@@ -394,9 +399,9 @@ function DashboardContent() {
         <motion.div variants={itemVars} className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em]"
-                style={{ color: "var(--text-muted)" }}>Knowledge Spheres</h3>
+                style={{ color: "var(--text-muted)" }}>🌟 Knowledge Spheres</h3>
             <span className="text-[9px] font-bold neon-text-cyan uppercase tracking-wider">
-              {trackData.subjects.length} subjects
+              📚 {trackData.subjects.length} subjects
             </span>
           </div>
           <div className="grid gap-2">

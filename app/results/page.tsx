@@ -26,12 +26,12 @@ const GRADE_EMOJIS: Record<string, string> = {
 };
 
 const MOTIVATIONAL: Record<string, string> = {
-  "A+": "Supreme Court Material. The bench awaits! 🏛️",
-  A:    "Top Advocate performance. Keep this momentum! ⚡",
-  B:    "Solid Counsel. A little more focus and you crack A+. 💪",
-  C:    "Needs more practice. The courtroom is brutal — train harder. 📚",
-  D:    "Junior Associate energy. Review weak areas and return. 🔄",
-  F:    "Back to Chambers. Every ninja falls before they rise. 🥷",
+  "A+": "🏛️ Supreme Court Material. The bench awaits!",
+  A:    "⚡ Top Advocate. Keep this momentum rolling!",
+  B:    "💪 Solid Counsel. Almost there for A+.",
+  C:    "📚 More practice needed. Grind time!",
+  D:    "🔄 Junior Associate energy. Keep climbing!",
+  F:    "🥷 Every ninja falls. But you'll rise again!",
 };
 
 function TrophyIllustration({ grade }: { grade: string }) {
@@ -440,19 +440,19 @@ function ResultsContent() {
               size="lg"
               onClick={() => router.push("/review")}
             >
-              🔍 Review {wrongAnswers.length} Mistake{wrongAnswers.length !== 1 ? "s" : ""}
+              🔍 Review {wrongAnswers.length} Mistake{wrongAnswers.length !== 1 ? "s" : ""} 📝
             </NeonButton>
           )}
 
           <NeonButton variant="cyan" fullWidth size="lg" onClick={() => router.push("/quiz")}>
-            ⚔️ Play Again
+            ⚔️ Battle Again 🔥
           </NeonButton>
           <NeonButton
             variant="ghost"
             fullWidth
             onClick={() => { game.resetSession(); router.push("/dashboard"); }}
           >
-            Back to Dashboard
+            🏠 Home Base
           </NeonButton>
         </motion.div>
 

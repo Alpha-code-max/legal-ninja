@@ -242,10 +242,10 @@ function ReviewContent() {
         >
           <div className="text-4xl">🔍</div>
           <h1 className="text-2xl font-black" style={{ color: "var(--cyber-red)" }}>
-            Mistake Review
+            🚨 Mistake Review
           </h1>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            {items.length} question{items.length !== 1 ? "s" : ""} to review
+            📋 {items.length} question{items.length !== 1 ? "s" : ""} to review
           </p>
         </motion.div>
 
@@ -285,21 +285,21 @@ function ReviewContent() {
               router.push(`/quiz?${params.toString()}`);
             }}
           >
-            🔁 Retry These Questions
+            🔁 Retry These Questions 💪
           </NeonButton>
           <NeonButton
             variant="cyan"
             fullWidth
             onClick={() => router.push("/quiz")}
           >
-            ⚔️ Continue to Next Session
+            ⚔️ Next Battle 🚀
           </NeonButton>
           <NeonButton
             variant="ghost"
             fullWidth
             onClick={() => { game.resetSession(); router.push("/dashboard"); }}
           >
-            Back to Dashboard
+            🏠 Back Home
           </NeonButton>
         </motion.div>
 
