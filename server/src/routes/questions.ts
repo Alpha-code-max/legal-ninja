@@ -138,7 +138,7 @@ router.get("/years", async (req: Request, res) => {
 });
 
 // ─── Check question availability for a subject (public) ──────────────────────
-// Returns which difficulty levels have MCQ and essay questions for a subject
+// Returns which difficulty levels have MCQ questions, and whether essays exist (same for all difficulties)
 router.get("/availability/:subject", async (req: Request, res) => {
   try {
     const { subject } = req.params;
@@ -148,32 +148,31 @@ router.get("/availability/:subject", async (req: Request, res) => {
     }
 
     const difficulties = ["easy", "medium", "hard", "expert"];
-    const types = ["mcq", "essay"];
-
     const availability: Record<string, Record<string, boolean>> = {};
 
+    // Check essay availability once — essays have no difficulty level
+    const essayQuery = {
+      subject,
+      type: "essay",
+      approved: { $ne: false },
+    };
+    const essayExists = (await Question.countDocuments(essayQuery)) > 0;
+
+    // Check MCQ availability by difficulty and add essay availability to all difficulties
     for (const difficulty of difficulties) {
       availability[difficulty] = {};
-      for (const type of types) {
-        let query: any = {
-          subject,
-          difficulty,
-          approved: { $ne: false },
-        };
-
-        if (type === "essay") {
-          query.type = "essay";
-        } else {
-          // MCQs: either type is "mcq" OR type field is missing (legacy questions)
-          query.$or = [
-            { type: "mcq" },
-            { type: { $exists: false } },
-          ];
-        }
-
-        const exists = await Question.countDocuments(query);
-        availability[difficulty][type] = exists > 0;
-      }
+      const mcqQuery = {
+        subject,
+        difficulty,
+        approved: { $ne: false },
+        $or: [
+          { type: "mcq" },
+          { type: { $exists: false } },
+        ],
+      };
+      const mcqExists = await Question.countDocuments(mcqQuery);
+      availability[difficulty].mcq = mcqExists > 0;
+      availability[difficulty].essay = essayExists;
     }
 
     res.json({ subject, availability });

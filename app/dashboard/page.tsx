@@ -234,7 +234,7 @@ function DashboardContent() {
   const trackData = TRACKS[track as keyof typeof TRACKS] ?? TRACKS.law_school_track;
   const xpToNext = nextLevel ? nextLevel.xp_required - user.xp : 0;
 
-  const [availability, setAvailability] = useState<Record<string, Record<string, Record<string, boolean>>>>({});
+  const [availability, setAvailability] = useState<Record<string, any>>({});
 
   // Fetch availability for all subjects
   useEffect(() => {
@@ -468,14 +468,14 @@ function DashboardContent() {
                         onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}&subject=${subject.id}&type=essay&difficulty=medium`)}
                         className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                         style={{ background: "color-mix(in srgb, var(--cyber-purple) 15%, transparent)", color: "var(--cyber-purple)" }}
-                        title={availability[subject.id]?.medium?.essay ? "Essay Questions (Available)" : "Essay Questions (Coming Soon)"}
+                        title={availability[subject.id]?.essay ? "Essay Questions (Available)" : "Essay Questions (Coming Soon)"}
                       >
                         ✏️ Essay
                       </button>
-                      {availability[subject.id]?.medium?.essay && (
+                      {availability[subject.id]?.essay && (
                         <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyber-purple" title="Available"></div>
                       )}
-                      {availability[subject.id] && !availability[subject.id].medium.essay && (
+                      {availability[subject.id] && !availability[subject.id].essay && (
                         <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-gray-600 opacity-40" title="Not available yet"></div>
                       )}
                     </div>

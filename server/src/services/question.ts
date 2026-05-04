@@ -142,8 +142,8 @@ async function fetchQuestions(params: {
   const { subject, track, difficulty, count, type, seenFilter, allowedRolesClause, sourceFilter, yearFilter, approvedClause } = params;
   const typeFilter = type ? { type } : {};
 
-  // For exam_simulation with no results, be more lenient with filters
-  const isLenientMode = !type || type === "mcq";
+  // Essay questions don't have difficulty levels — ignore difficulty filter for essays
+  const shouldIgnoreDifficulty = type === "essay";
 
   // ── GENERAL MODE: pull from any subject in the track ─────────────────────
   if (isGeneralMode(subject)) {
@@ -155,7 +155,7 @@ async function fetchQuestions(params: {
         $match: {
           track,
           subject: { $in: subjects },
-          difficulty,
+          ...(shouldIgnoreDifficulty ? {} : { difficulty }),
           used_count: { $lt: REUSE_THRESHOLD },
           ...typeFilter,
           ...approvedClause,
@@ -175,7 +175,7 @@ async function fetchQuestions(params: {
           $match: {
             track,
             subject: { $in: subjects },
-            difficulty,
+            ...(shouldIgnoreDifficulty ? {} : { difficulty }),
             used_count: { $lt: REUSE_THRESHOLD },
             ...typeFilter,
             ...seenFilter,
@@ -198,7 +198,7 @@ async function fetchQuestions(params: {
         $match: {
           subject,
           track,
-          ...(matchDifficulty ? { difficulty } : {}),
+          ...(matchDifficulty && !shouldIgnoreDifficulty ? { difficulty } : {}),
           used_count: { $lt: REUSE_THRESHOLD },
           ...typeFilter,
           ...(strict ? approvedClause : {}),

@@ -198,9 +198,12 @@ function QuizContent() {
       }
       if (msg === "BANK_EMPTY") {
         setPhase("setup");
-        const typeMsg = selectedType === "essay" ? ` ${selectedType}` : "";
-        const diffMsg = selectedDifficulty ? ` ${selectedDifficulty}` : "";
-        setLoadError(`No${typeMsg} questions available for${diffMsg} difficulty in this subject. Try a different difficulty level or question type.`);
+        if (selectedType === "essay") {
+          setLoadError(`No essay questions available in this subject. Try a different subject or question type.`);
+        } else {
+          const diffMsg = selectedDifficulty ? ` ${selectedDifficulty}` : "";
+          setLoadError(`No questions available for${diffMsg} difficulty in this subject. Try a different difficulty level or question type.`);
+        }
         return { question: null, fromOffline: false };
       }
       const isSpecificSubject = subj && subj !== track;
@@ -477,36 +480,38 @@ function QuizContent() {
             </div>
           )}
 
-          {/* Difficulty */}
-          <div>
-            <p className="text-[10px] uppercase tracking-widest font-black mb-2" style={{ color: "var(--text-muted)" }}>Difficulty</p>
-            <div className="grid grid-cols-4 gap-2">
-              {GAME_SETTINGS.difficulty_levels.map((d) => {
-                const dm = DIFF_META[d];
-                const isAvailable = !availability || availability[d]?.[selectedType] !== false;
-                const isDisabled = !!(availability && !availability[d]?.[selectedType]);
-                return (
-                  <button
-                    key={d}
-                    onClick={() => setSelectedDifficulty(d)}
-                    disabled={isDisabled}
-                    className={cn(
-                      "py-2.5 rounded-xl text-xs font-bold border transition-all capitalize flex flex-col items-center gap-0.5 relative",
-                      isDisabled && "opacity-40 cursor-not-allowed",
-                      selectedDifficulty === d && !isDisabled
-                        ? "border-cyber-cyan bg-cyber-cyan/10 shadow-neon-cyan"
-                        : "border-cyber-border hover:border-cyber-cyan/50"
-                    )}
-                    style={{ color: selectedDifficulty === d ? "var(--cyber-cyan)" : "var(--text-muted)" }}
-                    title={isDisabled ? `No ${selectedType} questions for ${d} difficulty` : ""}
-                  >
-                    <span>{dm?.label ?? d}</span>
-                    {isAvailable && <span className="text-[8px] text-cyber-green">✓</span>}
-                  </button>
-                );
-              })}
+          {/* Difficulty — only show for non-essay questions */}
+          {selectedType !== "essay" && (
+            <div>
+              <p className="text-[10px] uppercase tracking-widest font-black mb-2" style={{ color: "var(--text-muted)" }}>Difficulty</p>
+              <div className="grid grid-cols-4 gap-2">
+                {GAME_SETTINGS.difficulty_levels.map((d) => {
+                  const dm = DIFF_META[d];
+                  const mcqAvailable = availability?.[d]?.mcq ?? true;
+                  const isDisabled = !!(availability && !availability[d]?.mcq);
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => setSelectedDifficulty(d)}
+                      disabled={isDisabled}
+                      className={cn(
+                        "py-2.5 rounded-xl text-xs font-bold border transition-all capitalize flex flex-col items-center gap-0.5 relative",
+                        isDisabled && "opacity-40 cursor-not-allowed",
+                        selectedDifficulty === d && !isDisabled
+                          ? "border-cyber-cyan bg-cyber-cyan/10 shadow-neon-cyan"
+                          : "border-cyber-border hover:border-cyber-cyan/50"
+                      )}
+                      style={{ color: selectedDifficulty === d ? "var(--cyber-cyan)" : "var(--text-muted)" }}
+                      title={isDisabled ? `No questions for ${d} difficulty` : ""}
+                    >
+                      <span>{dm?.label ?? d}</span>
+                      {mcqAvailable && <span className="text-[8px] text-cyber-green">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Question Source */}
           <div>
