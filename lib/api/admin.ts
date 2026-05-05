@@ -20,6 +20,30 @@ export interface AdminStats {
   total_revenue_ngn: number;
 }
 
+export interface PaymentStatus {
+  status: "healthy" | "has_pending";
+  pending: number;
+  success: number;
+  failed: number;
+  total: number;
+  oldest_pending_mins: number | null;
+}
+
+export interface Transaction {
+  id: string;
+  reference: string;
+  user_email?: string;
+  status: "pending" | "success" | "failed";
+  amount_ngn: number;
+  questions_added: number;
+  pass_activated: string | null;
+  error_code?: string | null;
+  error_message?: string | null;
+  created_at: string;
+  completed_at: string | null;
+  pending_mins?: number;
+}
+
 async function adminRequest<T>(path: string, options: RequestInit = {}, key: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -120,4 +144,24 @@ export const adminApi = {
       }, key);
     }
   },
+
+  // Payment monitoring endpoints
+  getPaymentStatus: (key: string) =>
+    adminRequest<PaymentStatus>("/admin/payments/status", {}, key),
+
+  getPendingPayments: (key: string) =>
+    adminRequest<Transaction[]>("/admin/payments/pending", {}, key),
+
+  getFailedPayments: (key: string) =>
+    adminRequest<Transaction[]>("/admin/payments/failed", {}, key),
+
+  triggerPaymentRecovery: (key: string) =>
+    adminRequest<{ recovery_result: any; message: string }>(
+      "/admin/payments/recover", { method: "POST" }, key
+    ),
+
+  processPayment: (key: string, reference: string) =>
+    adminRequest<{ success: boolean; message: string }>(
+      `/admin/payments/${reference}/process`, { method: "POST" }, key
+    ),
 };

@@ -12,6 +12,7 @@ import {
   getQuestionBankStats,
 } from "../services/pdf";
 import { generateQuestion, questionPassesStrictCheck } from "../services/ai";
+import { getPaymentStats, manuallyProcessPayment, recoverStuckPayments } from "../services/payment-recovery";
 import { PdfChunk } from "../models/PdfChunk";
 import { User } from "../models/User";
 import { GameSession } from "../models/GameSession";
@@ -287,6 +288,101 @@ router.get("/stats", requireAdmin, async (_req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
+// ─── Payment Monitoring ────────────────────────────────────────────────────────
+
+// GET /api/admin/payments/status — payment system health and stats
+router.get("/payments/status", requireAdmin, async (_req, res) => {
+  try {
+    const stats = await getPaymentStats();
+    res.json({
+      status: stats.pending === 0 ? "healthy" : "has_pending",
+      ...stats,
+      oldest_pending_mins: stats.oldestPending
+        ? Math.floor((Date.now() - stats.oldestPending.getTime()) / 1000 / 60)
+        : null,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch payment stats" });
+  }
+});
+
+// GET /api/admin/payments/pending — list pending transactions
+router.get("/payments/pending", requireAdmin, async (_req, res) => {
+  try {
+    const pending = await Transaction.find({ status: "pending" })
+      .sort({ created_at: -1 })
+      .limit(50)
+      .lean();
+
+    const enriched = await Promise.all(
+      pending.map(async (txn) => {
+        const user = await User.findById(txn.user_id).select("email").lean();
+        const mins = Math.floor((Date.now() - new Date(txn.created_at).getTime()) / 1000 / 60);
+        return { ...txn, id: String(txn._id), user_email: user?.email, pending_mins: mins };
+      })
+    );
+
+    res.json(enriched);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch pending payments" });
+  }
+});
+
+// GET /api/admin/payments/failed — list failed transactions
+router.get("/payments/failed", requireAdmin, async (_req, res) => {
+  try {
+    const failed = await Transaction.find({ status: "failed" })
+      .sort({ created_at: -1 })
+      .limit(50)
+      .lean();
+
+    const enriched = await Promise.all(
+      failed.map(async (txn) => {
+        const user = await User.findById(txn.user_id).select("email").lean();
+        return { ...txn, id: String(txn._id), user_email: user?.email };
+      })
+    );
+
+    res.json(enriched);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch failed payments" });
+  }
+});
+
+// POST /api/admin/payments/recover — manually trigger stuck payment recovery
+router.post("/payments/recover", requireAdmin, async (_req, res) => {
+  try {
+    console.log("[Admin] Manual payment recovery triggered");
+    const result = await recoverStuckPayments();
+    res.json({
+      recovery_result: result,
+      message: `Processed ${result.processed} transactions: ${result.succeeded} succeeded, ${result.failed} failed`,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Recovery failed" });
+  }
+});
+
+// POST /api/admin/payments/:reference/process — manually process a single payment
+router.post("/payments/:reference/process", requireAdmin, async (req: Request, res) => {
+  try {
+    const reference = String(req.params.reference);
+    const result = await manuallyProcessPayment(reference);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Processing failed" });
   }
 });
 

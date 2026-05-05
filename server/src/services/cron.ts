@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { User } from "../models/User";
 import { LeaderboardEntry } from "../models/LeaderboardEntry";
 import { XP_SOURCES } from "./progression";
+import { recoverStuckPayments } from "./payment-recovery";
 
 export function startCronJobs(): void {
   // Daily reset at midnight WAT (23:00 UTC): award login XP + break missed streaks
@@ -55,6 +56,20 @@ export function startCronJobs(): void {
       { "active_passes.expires_at": { $lt: new Date() } },
       { $pull: { active_passes: { expires_at: { $lt: new Date() } } } }
     ).catch(console.error);
+  });
+
+  // Every 5 minutes: recover stuck payments (pending transactions paid on Paystack)
+  cron.schedule("*/5 * * * *", async () => {
+    try {
+      const result = await recoverStuckPayments();
+      if (result.processed > 0) {
+        console.log(
+          `[cron] Payment recovery: ${result.succeeded} recovered, ${result.failed} failed, ${result.pending} still pending`
+        );
+      }
+    } catch (err) {
+      console.error("[cron] Payment recovery error:", err);
+    }
   });
 
   console.log("[cron] Cron jobs registered");

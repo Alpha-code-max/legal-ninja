@@ -125,20 +125,65 @@ router.post("/buy/pass", requireAuth, validate(PassSchema), async (req: Request,
 
 // POST /api/store/webhook/paystack — raw body required for signature verification
 router.post("/webhook/paystack", async (req, res) => {
+  const startTime = Date.now();
   const signature = req.headers["x-paystack-signature"] as string;
   const rawBody = (req as Request & { rawBody?: string }).rawBody;
+  const reference = req.body?.data?.reference ?? "unknown";
 
-  if (!rawBody || !verifyPaystackSignature(rawBody, signature)) {
+  console.log(`[Webhook] Received Paystack webhook: ${reference}`);
+
+  // ===== VALIDATION: Raw body exists =====
+  if (!rawBody) {
+    console.error(`[Webhook] Missing raw body for ${reference}`);
+    res.status(400).json({ error: "Missing request body" });
+    return;
+  }
+
+  // ===== VALIDATION: Signature verification =====
+  if (!signature) {
+    console.error(`[Webhook] Missing signature header for ${reference}`);
+    res.status(401).json({ error: "Missing signature" });
+    return;
+  }
+
+  if (!verifyPaystackSignature(rawBody, signature)) {
+    console.error(`[Webhook] Invalid signature for ${reference}`);
     res.status(401).json({ error: "Invalid signature" });
     return;
   }
 
+  console.log(`[Webhook] ✓ Signature verified for ${reference}`);
+
+  // ===== PROCESSING =====
   try {
-    await processPaystackWebhook(req.body);
-    res.sendStatus(200);
-  } catch (err) {
-    console.error("Webhook processing error:", err);
-    res.sendStatus(500);
+    const event = req.body;
+
+    // Validate event structure
+    if (!event.event || !event.data) {
+      console.error(`[Webhook] Invalid event structure for ${reference}`);
+      res.status(400).json({ error: "Invalid event structure" });
+      return;
+    }
+
+    console.log(`[Webhook] Processing event: ${event.event}`);
+
+    await processPaystackWebhook(event);
+
+    const duration = Date.now() - startTime;
+    console.log(`[Webhook] ✅ Processed successfully in ${duration}ms`);
+    res.status(200).json({ status: "ok" });
+
+  } catch (err: any) {
+    const duration = Date.now() - startTime;
+    const message = err.message || String(err);
+    console.error(`[Webhook] ❌ Processing failed for ${reference} (${duration}ms):`, message);
+
+    // Always return 200 to acknowledge receipt (Paystack will retry if we return error)
+    // The actual processing error is logged and should be monitored
+    res.status(200).json({
+      status: "received",
+      note: "Processing failed but webhook acknowledged. Check logs for details.",
+    });
   }
 });
 

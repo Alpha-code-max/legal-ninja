@@ -1,0 +1,146 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    PAYMENT MONITORING DASHBOARD PREVIEW                     ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+This is what you'll see when you click the "💳 Payments" tab in your admin panel.
+
+─────────────────────────────────────────────────────────────────────────────
+
+┌─ ADMIN HEADER ──────────────────────────────────────────────────────────────┐
+│  [Logo] Admin Portal                          [📤] [📝] [🏦] [📚] [📊] [💳]  │
+│  156 users · 8 PDFs · 5,200 questions                           (SELECTED)   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+─────────────────────────────────────────────────────────────────────────────
+
+┌─ PAYMENT SYSTEM HEALTH ─────────────────────────────────────────────────────┐
+│                                                         [🔄 Refresh]         │
+│                                                                              │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
+│  │  156            │  │  150            │  │  0              │            │
+│  │  TOTAL          │  │  SUCCESS        │  │  PENDING        │            │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘            │
+│                       🟢 Green             🟢 Green                         │
+│                                                                              │
+│  ┌─────────────────┐                                                       │
+│  │  1              │                                                       │
+│  │  FAILED         │                                                       │
+│  └─────────────────┘                                                       │
+│  🔴 Red                                                                     │
+│                                                                              │
+│  ✓ All payments processed                                                  │
+│                                                                              │
+│  [🔧 Trigger Manual Recovery]                                              │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+─────────────────────────────────────────────────────────────────────────────
+
+┌─ PENDING TRANSACTIONS ──────────────────────────────────────────────────────┐
+│  ⏳ Pending Transactions (0)                                                │
+│                                                                              │
+│  [No pending transactions - all paid out! ✅]                               │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+─────────────────────────────────────────────────────────────────────────────
+
+┌─ FAILED TRANSACTIONS ───────────────────────────────────────────────────────┐
+│  ❌ Failed Transactions (1)                                                │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ LN-7D4FGH0I75F36489                                     ₦500        │  │
+│  │ john.doe@example.com                                               │  │
+│  │ ERROR: USER_NOT_FOUND                                              │  │
+│  │ User not found in database - check account creation               │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════════
+
+EXAMPLE 2: WHEN YOU HAVE STUCK PAYMENTS
+─────────────────────────────────────────────────────────────────────────────
+
+┌─ PAYMENT SYSTEM HEALTH ─────────────────────────────────────────────────────┐
+│                                                         [🔄 Refresh]         │
+│                                                                              │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
+│  │  158            │  │  150            │  │  2              │            │
+│  │  TOTAL          │  │  SUCCESS        │  │  PENDING        │            │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘            │
+│  🔵 Info            🟢 Green              🟡 Gold (Warning!)                │
+│                                                                              │
+│  ┌─────────────────┐                                                       │
+│  │  1              │                                                       │
+│  │  FAILED         │                                                       │
+│  └─────────────────┘                                                       │
+│  🔴 Red                                                                     │
+│                                                                              │
+│  ⚠️ Oldest pending: 7 mins ago                                             │
+│                                                                              │
+│  [🔧 Trigger Manual Recovery]                                              │
+│                                                                              │
+│  ✓ Recovery started. Processed 2 transactions: 2 succeeded, 0 pending      │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+─────────────────────────────────────────────────────────────────────────────
+
+┌─ PENDING TRANSACTIONS ──────────────────────────────────────────────────────┐
+│  ⏳ Pending Transactions (2)                                               │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ LN-9A1BDB9F52D14267                                     ₦500        │  │
+│  │ orji8112002@gmail.com                                              │  │
+│  │ 50 questions                                            7 mins     │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ LN-5B2CEC9G63E25378                                     ₦1000       │  │
+│  │ student@example.com                                                │  │
+│  │ 100 questions                                           3 mins     │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════════
+
+KEY FEATURES:
+
+✓ Real-time metrics showing payment health
+  • Total: All transactions
+  • Success: Completed payments (green)
+  • Pending: Stuck payments (gold - needs action)
+  • Failed: Error payments (red - needs investigation)
+
+✓ Pending Transactions
+  • Shows customer email and amount
+  • Shows how long transaction has been stuck
+  • Shows what they paid for (questions or pass)
+  • Automatically recovers every 5 minutes
+
+✓ Failed Transactions
+  • Shows error code (e.g., USER_NOT_FOUND)
+  • Shows error message explaining what went wrong
+  • Helps debug issues
+
+✓ Manual Recovery
+  • One-click button to trigger immediate recovery
+  • Shows results (how many recovered, how many still pending)
+  • Can be triggered anytime you see pending transactions
+
+✓ Auto-Refresh
+  • Click refresh button to update data anytime
+  • Auto-updates when you switch to Payments tab
+
+═════════════════════════════════════════════════════════════════════════════════
+
+DAILY WORKFLOW:
+
+1. Click "💳 Payments" tab (takes 1 second)
+2. Check if Pending count is 0
+3. If Pending > 0, click "🔧 Trigger Manual Recovery"
+4. Done! System is healthy ✓
+
+═════════════════════════════════════════════════════════════════════════════════

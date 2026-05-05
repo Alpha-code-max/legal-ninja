@@ -2,11 +2,12 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { adminApi, type PdfDocument, type AdminStats } from "@/lib/api/admin";
+import { adminApi, type PdfDocument, type AdminStats, type PaymentStatus, type Transaction } from "@/lib/api/admin";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { cn } from "@/lib/utils";
 
 type BankStat = { subject: string; total: number; by_difficulty: Record<string, number>; by_type: Record<string, number>; essays: number };
+type TabType = "upload" | "past" | "banks" | "pdfs" | "stats" | "payments";
 
 const SUBJECTS = [
   { id: "civil_procedure",    label: "Civil Procedure",    track: "law_school_track"    },
@@ -31,7 +32,14 @@ export default function AdminPage() {
   const [stats,  setStats]  = useState<AdminStats | null>(null);
   const [pdfs,   setPdfs]   = useState<PdfDocument[]>([]);
   const [banks,  setBanks]  = useState<BankStat[]>([]);
-  const [tab,    setTab]    = useState<"upload" | "past" | "pdfs" | "banks" | "stats">("upload");
+  const [tab,    setTab]    = useState<TabType>("upload");
+
+  // Payment monitoring state
+  const [paymentStatus,   setPaymentStatus]   = useState<PaymentStatus | null>(null);
+  const [pendingPayments, setPendingPayments] = useState<Transaction[]>([]);
+  const [failedPayments,  setFailedPayments]  = useState<Transaction[]>([]);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryMsg,     setRecoveryMsg]     = useState<{ ok: boolean; text: string } | null>(null);
 
   const [selectedFile,    setSelectedFile]    = useState<File | null>(null);
   const [selectedSubject, setSelectedSubject] = useState(SUBJECTS[0].id);
@@ -71,11 +79,42 @@ export default function AdminPage() {
 
   const refreshBanks = () => adminApi.getBankStats(adminKey).then(setBanks).catch(console.error);
 
+  const refreshPaymentData = async () => {
+    try {
+      const [status, pending, failed] = await Promise.all([
+        adminApi.getPaymentStatus(adminKey),
+        adminApi.getPendingPayments(adminKey),
+        adminApi.getFailedPayments(adminKey),
+      ]);
+      setPaymentStatus(status);
+      setPendingPayments(pending);
+      setFailedPayments(failed);
+    } catch (err) {
+      console.error("Failed to load payment data:", err);
+    }
+  };
+
+  const handleRecovery = async () => {
+    setRecoveryLoading(true);
+    setRecoveryMsg(null);
+    try {
+      const result = await adminApi.triggerPaymentRecovery(adminKey);
+      setRecoveryMsg({ ok: true, text: result.message });
+      // Refresh data after recovery
+      setTimeout(refreshPaymentData, 1000);
+    } catch (err) {
+      setRecoveryMsg({ ok: false, text: err instanceof Error ? err.message : "Recovery failed" });
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!authed) return;
     adminApi.getStats(adminKey).then(setStats).catch(console.error);
     adminApi.listPdfs(adminKey).then(setPdfs).catch(console.error);
     refreshBanks();
+    refreshPaymentData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authed, adminKey]);
 
@@ -229,10 +268,14 @@ export default function AdminPage() {
       {/* Sticky tab bar */}
       <div className="sticky top-[57px] z-30 flex gap-2 px-4 py-3 overflow-x-auto border-b"
            style={{ background: "var(--cyber-card-bg)", backdropFilter: "blur(16px)", borderColor: "var(--cyber-border)" }}>
-        {(["upload", "past", "banks", "pdfs", "stats"] as const).map((t) => (
+        {(["upload", "past", "banks", "pdfs", "stats", "payments"] as const).map((t) => (
           <button
             key={t}
-            onClick={() => { setTab(t); if (t === "banks") refreshBanks(); }}
+            onClick={() => {
+              setTab(t);
+              if (t === "banks") refreshBanks();
+              if (t === "payments") refreshPaymentData();
+            }}
             className={cn(
               "px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest border whitespace-nowrap transition-all shrink-0",
               tab === t
@@ -245,7 +288,8 @@ export default function AdminPage() {
               : t === "past"  ? "📝 Past Questions"
               : t === "banks" ? "🏦 Question Banks"
               : t === "pdfs"  ? "📚 Manage PDFs"
-              : "📊 Stats"}
+              : t === "stats" ? "📊 Stats"
+              : "💳 Payments"}
           </button>
         ))}
       </div>
@@ -692,6 +736,143 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
+          </motion.div>
+        )}
+
+        {/* ── PAYMENTS ── */}
+        {tab === "payments" && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            {/* Health Status */}
+            {paymentStatus && (
+              <div className="cyber-card p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-black text-sm uppercase tracking-widest" style={{ color: "var(--cyber-cyan)" }}>Payment System Health</h2>
+                  <button
+                    onClick={refreshPaymentData}
+                    className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border"
+                    style={{ borderColor: "var(--cyber-border)", color: "var(--text-muted)" }}
+                  >
+                    🔄 Refresh
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Total", value: paymentStatus.total, color: "var(--cyber-cyan)" },
+                    { label: "Success", value: paymentStatus.success, color: "var(--cyber-green)" },
+                    { label: "Pending", value: paymentStatus.pending, color: paymentStatus.pending === 0 ? "var(--cyber-green)" : "var(--cyber-gold)" },
+                    { label: "Failed", value: paymentStatus.failed, color: "var(--cyber-red)" },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-lg p-4 text-center" style={{ background: "var(--cyber-bg)" }}>
+                      <p className="text-2xl font-black font-mono" style={{ color: s.color }}>{s.value}</p>
+                      <p className="text-[10px] mt-1 uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {paymentStatus.oldest_pending_mins && (
+                  <div className="p-3 rounded-lg" style={{ background: "color-mix(in srgb, var(--cyber-gold) 10%, transparent)", borderLeft: "3px solid var(--cyber-gold)" }}>
+                    <p className="text-xs font-bold" style={{ color: "var(--cyber-gold)" }}>
+                      ⚠️ Oldest pending: {paymentStatus.oldest_pending_mins} mins ago
+                    </p>
+                  </div>
+                )}
+
+                {paymentStatus.pending === 0 && (
+                  <div className="p-3 rounded-lg" style={{ background: "color-mix(in srgb, var(--cyber-green) 10%, transparent)", borderLeft: "3px solid var(--cyber-green)" }}>
+                    <p className="text-xs font-bold" style={{ color: "var(--cyber-green)" }}>✓ All payments processed</p>
+                  </div>
+                )}
+
+                <NeonButton
+                  variant="cyan"
+                  fullWidth
+                  onClick={handleRecovery}
+                  disabled={recoveryLoading}
+                >
+                  {recoveryLoading ? "Recovering…" : "🔧 Trigger Manual Recovery"}
+                </NeonButton>
+
+                {recoveryMsg && (
+                  <div
+                    className="text-xs p-3 rounded-lg border"
+                    style={{
+                      color: recoveryMsg.ok ? "var(--cyber-green)" : "var(--cyber-red)",
+                      borderColor: recoveryMsg.ok ? "color-mix(in srgb, var(--cyber-green) 25%, transparent)" : "color-mix(in srgb, var(--cyber-red) 25%, transparent)",
+                      background: recoveryMsg.ok ? "color-mix(in srgb, var(--cyber-green) 8%, transparent)" : "color-mix(in srgb, var(--cyber-red) 8%, transparent)",
+                    }}
+                  >
+                    {recoveryMsg.text}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Pending Transactions */}
+            {pendingPayments.length > 0 && (
+              <div className="cyber-card p-6 space-y-3">
+                <h3 className="font-black text-sm uppercase tracking-widest" style={{ color: "var(--cyber-gold)" }}>
+                  ⏳ Pending Transactions ({pendingPayments.length})
+                </h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {pendingPayments.map((txn) => (
+                    <div key={txn.id} className="p-3 rounded-lg text-xs" style={{ background: "var(--cyber-bg)" }}>
+                      <div className="flex justify-between items-start mb-1">
+                        <div>
+                          <p className="font-bold" style={{ color: "var(--text-base)" }}>{txn.reference}</p>
+                          <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>{txn.user_email || "Unknown user"}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-mono font-bold" style={{ color: "var(--cyber-cyan)" }}>₦{txn.amount_ngn}</p>
+                          {txn.pending_mins && (
+                            <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>{txn.pending_mins} mins</p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>
+                        {txn.questions_added > 0 ? `${txn.questions_added} questions` : txn.pass_activated || "No action assigned"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Failed Transactions */}
+            {failedPayments.length > 0 && (
+              <div className="cyber-card p-6 space-y-3">
+                <h3 className="font-black text-sm uppercase tracking-widest" style={{ color: "var(--cyber-red)" }}>
+                  ❌ Failed Transactions ({failedPayments.length})
+                </h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {failedPayments.map((txn) => (
+                    <div key={txn.id} className="p-3 rounded-lg text-xs border" style={{ background: "var(--cyber-bg)", borderColor: "color-mix(in srgb, var(--cyber-red) 25%, transparent)" }}>
+                      <div className="flex justify-between items-start mb-1">
+                        <div>
+                          <p className="font-bold" style={{ color: "var(--text-base)" }}>{txn.reference}</p>
+                          <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>{txn.user_email || "Unknown user"}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-mono font-bold" style={{ color: "var(--cyber-red)" }}>₦{txn.amount_ngn}</p>
+                        </div>
+                      </div>
+                      {txn.error_code && (
+                        <p className="text-[9px] font-mono" style={{ color: "var(--cyber-red)" }}>{txn.error_code}</p>
+                      )}
+                      {txn.error_message && (
+                        <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>{txn.error_message}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!paymentStatus && (
+              <div className="cyber-card p-10 text-center" style={{ color: "var(--text-muted)" }}>
+                <p>Loading payment data…</p>
+              </div>
+            )}
           </motion.div>
         )}
 
