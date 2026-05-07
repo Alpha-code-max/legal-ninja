@@ -115,6 +115,10 @@ export const api = {
     request<{ correct: boolean; xpGained: number; newStreak: number; levelChanged: boolean; direction: "up" | "down" | null }>(
       "/sessions/answer", { method: "POST", body: JSON.stringify(body) }
     ),
+  submitEssayAnswer: (body: { session_id: string; question_id: string; answer_text: string; time_taken_ms: number; streak: number }) =>
+    request<{ correct: boolean; score: number; feedback: string; correct_answer?: string; strengths: string[]; weaknesses: string[]; xpGained: number }>(
+      "/sessions/answer/essay", { method: "POST", body: JSON.stringify(body) }
+    ),
   endSession: (session_id: string) =>
     request<{ grade: string; percentage: number; xpEarned: number; newBadges: string[]; levelDirection: "up" | "down" | null; answers: Array<{question_id: string; selected: string; correct: boolean; time_taken_ms: number; score?: number; feedback?: string; strengths?: string[]; weaknesses?: string[]; xp_gained: number}> }>(
       "/sessions/end", { method: "POST", body: JSON.stringify({ session_id }) }

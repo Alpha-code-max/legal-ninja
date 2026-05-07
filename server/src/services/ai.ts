@@ -22,6 +22,7 @@ Return valid JSON only with the following structure:
 {
   "score": number (0-100),
   "feedback": "string (general summary)",
+  "correct_answer": "string (concise 2-3 sentence correct answer for student review — do not exceed 60 words)",
   "strengths": ["string", "string"],
   "weaknesses": ["string", "string"]
 }`;
@@ -36,6 +37,7 @@ export interface GradeEssayParams {
 export interface EssayGrade {
   score: number;
   feedback: string;
+  correct_answer?: string;
   strengths: string[];
   weaknesses: string[];
 }
@@ -78,6 +80,7 @@ Return ONLY the JSON assessment.`;
       return {
         score: Number(parsed.score) || 0,
         feedback: String(parsed.feedback || ""),
+        correct_answer: String(parsed.correct_answer || ""),
         strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String) : [],
         weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.map(String) : [],
       };

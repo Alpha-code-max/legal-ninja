@@ -5,7 +5,7 @@ import { validate } from "../middleware/validate";
 import { submitAnswer, endGameSession } from "../services/game";
 import { GameSession } from "../models/GameSession";
 import { Question } from "../models/Question";
-import { generateDeepExplanation } from "../services/ai";
+import { generateDeepExplanation, gradeEssay } from "../services/ai";
 import { isSubjectAllowed } from "../config/subjects";
 import { User } from "../models/User";
 import mongoose from "mongoose";
@@ -26,6 +26,16 @@ const AnswerSchema = z.object({
   question_id:    z.string().min(1),
   selected:       z.string().min(1), // Changed from enum to string for essay support
   correct_option: z.string().optional(),
+  time_taken_ms:  z.number().int().min(0).max(600000),
+  streak:         z.number().int().min(0),
+});
+
+const EssayAnswerSchema = z.object({
+  session_id:     z.string().min(1),
+  question_id:    z.string().min(1),
+  answer_text:    z.string()
+    .transform(s => s.trim())
+    .pipe(z.string().min(20, "Answer must be at least 20 characters").max(5000, "Answer cannot exceed 5000 characters")),
   time_taken_ms:  z.number().int().min(0).max(600000),
   streak:         z.number().int().min(0),
 });
@@ -79,6 +89,70 @@ router.post("/answer", requireAuth, validate(AnswerSchema), async (req: Request,
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to submit answer" });
+  }
+});
+
+router.post("/answer/essay", requireAuth, validate(EssayAnswerSchema), async (req: Request, res) => {
+  try {
+    const { session_id, question_id, answer_text, time_taken_ms, streak } = req.body;
+
+    // Validate question type
+    const question = await Question.findById(question_id).select("type model_answer rubric question");
+    if (!question) { res.status(404).json({ error: "Question not found" }); return; }
+    if (question.type !== "essay") { res.status(400).json({ error: "Not an essay question" }); return; }
+
+    // Submit answer (marks as pending grading)
+    await submitAnswer({
+      sessionId: session_id,
+      userId: req.user!.uid,
+      questionId: question_id,
+      selected: answer_text,
+      correctOption: "",
+      timeTakenMs: time_taken_ms,
+      streak,
+    });
+
+    // Grade essay synchronously
+    const grade = await gradeEssay({
+      question: question.question,
+      modelAnswer: question.model_answer || "",
+      rubric: question.rubric || "",
+      userAnswer: answer_text,
+    });
+
+    const correct = grade.score >= 50;
+    const xpGained = Math.round(grade.score / 2);
+
+    // Save grade to session answer
+    await GameSession.updateOne(
+      { _id: new mongoose.Types.ObjectId(session_id), "answers.question_id": question_id },
+      { $set: {
+          "answers.$.score": grade.score,
+          "answers.$.feedback": grade.feedback,
+          "answers.$.strengths": grade.strengths,
+          "answers.$.weaknesses": grade.weaknesses,
+          "answers.$.correct": correct,
+          "answers.$.xp_gained": xpGained,
+      }}
+    );
+
+    // Update user XP if grading succeeded
+    if (xpGained > 0) {
+      await User.findByIdAndUpdate(req.user!.uid, { $inc: { xp: xpGained } });
+    }
+
+    res.json({
+      correct,
+      score: grade.score,
+      feedback: grade.feedback,
+      correct_answer: grade.correct_answer,
+      strengths: grade.strengths,
+      weaknesses: grade.weaknesses,
+      xpGained,
+    });
+  } catch (err) {
+    console.error("Essay grading error:", err);
+    res.status(500).json({ error: "Failed to grade essay" });
   }
 });
 

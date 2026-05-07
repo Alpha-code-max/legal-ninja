@@ -7,6 +7,7 @@ import { useUserStore } from "@/lib/store/user-store";
 import { useGuestStore, GUEST_DAILY_LIMIT } from "@/lib/store/guest-store";
 import { QuestionCard } from "@/components/game/QuestionCard";
 import { EssayQuestionCard } from "@/components/game/EssayQuestionCard";
+import { EssayCorrectionCard } from "@/components/game/EssayCorrectionCard";
 import { TimerRing } from "@/components/ui/TimerRing";
 import { StreakCounter } from "@/components/ui/StreakCounter";
 import { NeonButton } from "@/components/ui/NeonButton";
@@ -116,6 +117,15 @@ function QuizContent() {
   const [dailyBlocked, setDailyBlocked]     = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>("mixed");
   const [availability, setAvailability] = useState<Record<string, Record<string, boolean>> | null>(null);
+  const [essayResult, setEssayResult] = useState<{
+    correct: boolean;
+    score: number;
+    feedback: string;
+    correct_answer?: string;
+    strengths: string[];
+    weaknesses: string[];
+    xpGained: number;
+  } | null>(null);
 
   const game = useGameStore();
   const user = useUserStore();
@@ -189,6 +199,7 @@ function QuizContent() {
         return { question: data.question as Question, fromOffline: false };
       }
       const data = await api.nextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode, type: selectedType });
+      user.deductQuestion();
       return { question: data.question as Question, fromOffline: false };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
@@ -328,18 +339,52 @@ function QuizContent() {
       user.addXP(xp_gained);
     }
 
-    if (sessionId && !isOffline && !isGuest) {
-      api.submitAnswer({ 
-        session_id: sessionId, 
-        question_id: currentQuestion.id, 
-        selected, 
-        correct_option: isEssay ? selected : (correctOption ?? selected), 
-        time_taken_ms: timeTakenMs, 
-        streak: game.streak 
-      }).catch(console.error);
-    }
-
     if (isEssay) {
+      // Essay: grade synchronously if not offline/guest
+      if (sessionId && !isOffline && !isGuest) {
+        try {
+          const result = await api.submitEssayAnswer({
+            session_id: sessionId,
+            question_id: currentQuestion.id,
+            answer_text: selected,
+            time_taken_ms: timeTakenMs,
+            streak: game.streak,
+          });
+
+          user.addXP(result.xpGained);
+
+          if (!result.correct) {
+            // Show correction card with 20-second countdown
+            setEssayResult(result);
+            const nextIndex = questionIndex + 1;
+            if (nextIndex >= selectedCount) {
+              nextActionRef.current = async () => {
+                setEssayResult(null);
+                setIsRevealing(false);
+                await finishSession();
+              };
+            } else {
+              nextActionRef.current = async () => {
+                const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex);
+                if (q) { setIsOffline(fromOffline); setCurrentQuestion(q); setQuestionIndex(nextIndex); }
+                setEssayResult(null);
+                setIsRevealing(false);
+              };
+            }
+            setCountdown(20);
+            return;
+          }
+
+          // Correct essay: show XP popup, then continue
+          setXpPopup({ xp: result.xpGained, correct: true });
+          setTimeout(() => setXpPopup(null), 1400);
+        } catch (err) {
+          console.error("Essay grading error:", err);
+          // Continue without grading on error
+        }
+      }
+
+      // Continue to next question (correct, offline, or error)
       const nextIndex = questionIndex + 1;
       if (nextIndex >= selectedCount) {
         setIsRevealing(false);
@@ -350,6 +395,17 @@ function QuizContent() {
         setIsRevealing(false);
       }
       return;
+    }
+
+    if (sessionId && !isOffline && !isGuest) {
+      api.submitAnswer({
+        session_id: sessionId,
+        question_id: currentQuestion.id,
+        selected,
+        correct_option: correctOption ?? selected,
+        time_taken_ms: timeTakenMs,
+        streak: game.streak
+      }).catch(console.error);
     }
 
     if (correct) setCombo((c) => c + 1); else setCombo(0);
@@ -722,7 +778,16 @@ function QuizContent() {
         </AnimatePresence>
 
         <AnimatePresence mode="wait">
-          {isEssay ? (
+          {essayResult && !essayResult.correct ? (
+            <EssayCorrectionCard
+              key={`correction-${currentQuestion.id}`}
+              score={essayResult.score}
+              correctAnswer={essayResult.correct_answer ?? ""}
+              feedback={essayResult.feedback}
+              countdown={countdown}
+              onSkip={skipToNext}
+            />
+          ) : isEssay ? (
             <EssayQuestionCard
               key={currentQuestion.id}
               question={currentQuestion}

@@ -157,6 +157,18 @@ export async function endGameSession(params: {
 
     if (question.type === "essay") {
       maxPossibleScore += 100;
+
+      // Skip if already graded synchronously (feedback will be set)
+      if (answer.feedback !== undefined) {
+        const s = answer.score || 0;
+        totalPointsEarned += s;
+        essayScore += s;
+        essayXP += answer.xp_gained || 0;
+        if (answer.correct) essayCorrectCount++;
+        continue;
+      }
+
+      // Fallback: grade now (for essays submitted via old endpoint)
       try {
         const grade = await gradeEssay({
           question: question.question,

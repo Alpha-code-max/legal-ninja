@@ -20,9 +20,10 @@ export function EssayQuestionCard({ question, questionNumber, total, onAnswer, d
     startTimeRef.current = Date.now();
   }, [question.id]);
 
-  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-  const minWords = 10;
-  const isValid = wordCount >= minWords && !disabled;
+  const charCount = text.trim().length;
+  const minChars = 30;
+  const maxChars = 5000;
+  const isValid = charCount >= minChars && charCount <= maxChars && !disabled;
 
   const handleSubmit = () => {
     if (!isValid) return;
@@ -62,15 +63,16 @@ export function EssayQuestionCard({ question, questionNumber, total, onAnswer, d
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={disabled}
+          maxLength={maxChars}
           placeholder="Type your legal analysis here... cite relevant cases or statutes if applicable."
           className="w-full h-64 bg-transparent border border-cyber-border rounded-xl p-4 text-sm focus:outline-none focus:border-cyber-purple transition-all resize-none"
           style={{ color: "var(--text-base)" }}
         />
         <div className="flex justify-between items-center text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
-          <span style={{ color: wordCount < minWords && text.trim() ? "var(--cyber-red)" : "var(--text-muted)" }}>
-            Word count: {wordCount} {wordCount < minWords && text.trim() ? `(min ${minWords})` : ""}
+          <span style={{ color: charCount < minChars && text.trim() ? "var(--cyber-red)" : "var(--text-muted)" }}>
+            {charCount < minChars && text.trim() ? `${minChars - charCount} more characters` : `${charCount} characters`}
           </span>
-          <span>{text.length} characters</span>
+          <span>{maxChars - charCount} remaining</span>
         </div>
       </div>
 
@@ -80,9 +82,9 @@ export function EssayQuestionCard({ question, questionNumber, total, onAnswer, d
         size="lg"
         onClick={handleSubmit}
         disabled={!isValid}
-        title={wordCount < minWords ? `Minimum ${minWords} words required` : ""}
+        title={charCount < minChars ? `Minimum ${minChars} characters required` : charCount > maxChars ? `Maximum ${maxChars} characters allowed` : ""}
       >
-        {wordCount < minWords ? `Submit Response (${minWords - wordCount} more words)` : "Submit Response"}
+        {disabled && text.trim().length > 0 ? "Grading…" : charCount < minChars ? `Submit Response (${minChars - charCount} more)` : "Submit Response"}
       </NeonButton>
     </motion.div>
   );
