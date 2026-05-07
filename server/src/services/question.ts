@@ -55,11 +55,13 @@ export async function getOrGenerateQuestions(params: {
   year?: number;
   mode?: string;
   type?: "mcq" | "essay" | "mixed";
+  exclude_ids?: string[];
 }): Promise<IQuestion[]> {
-  const { subject, track, difficulty, count, userId, source, year, mode, type } = params;
+  const { subject, track, difficulty, count, userId, source, year, mode, type, exclude_ids = [] } = params;
 
   const seenIds = userId ? await getSeenIds(userId) : [];
-  const seenFilter = seenIds.length > 0 ? { _id: { $nin: seenIds } } : {};
+  const excludeIdSet = new Set([...seenIds.map(id => id.toString()), ...exclude_ids]);
+  const seenFilter = excludeIdSet.size > 0 ? { _id: { $nin: Array.from(excludeIdSet) } } : {};
 
   // Determine role for filtering (defaults to law_student)
   let role = "law_student";

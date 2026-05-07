@@ -18,6 +18,7 @@ const GenerateSchema = z.object({
   year:       z.number().int().min(1990).max(2030).optional(),
   mode:       z.string().optional(),
   type:       z.enum(["mcq", "essay", "mixed"]).default("mixed"),
+  exclude_ids: z.array(z.string()).optional(),
 });
 
 // Guest endpoint — no auth, just serves a question from the DB (no balance deduction)
@@ -32,6 +33,7 @@ router.post("/guest-next", validate(GenerateSchema), async (req: Request, res) =
       year:       req.body.year,
       mode:       req.body.mode,
       type:       req.body.type,
+      exclude_ids: req.body.exclude_ids,
     });
     if (questions.length === 0) {
       res.status(503).json({ error: "BANK_EMPTY" });
@@ -71,6 +73,7 @@ router.post("/next", requireAuth, validate(GenerateSchema), async (req: Request,
       year:       req.body.year,
       mode:       req.body.mode,
       type:       req.body.type,
+      exclude_ids: req.body.exclude_ids,
     });
 
     if (questions.length === 0) {

@@ -126,6 +126,7 @@ function QuizContent() {
     weaknesses: string[];
     xpGained: number;
   } | null>(null);
+  const [askedQuestionIds, setAskedQuestionIds] = useState<string[]>([]);
 
   const game = useGameStore();
   const user = useUserStore();
@@ -184,7 +185,7 @@ function QuizContent() {
   };
 
   const fetchNextQuestion = useCallback(async (
-    subj: string, diff: Difficulty, queue: Question[], queueIndex: number
+    subj: string, diff: Difficulty, queue: Question[], queueIndex: number, excludeIds: string[] = []
   ): Promise<{ question: Question | null; fromOffline: boolean }> => {
     try {
       if (isGuest) {
@@ -195,10 +196,10 @@ function QuizContent() {
           setLoadError(`Daily limit reached (${GUEST_DAILY_LIMIT} questions). Sign up to keep playing!`);
           return { question: null, fromOffline: false };
         }
-        const data = await api.guestNextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode, type: selectedType });
+        const data = await api.guestNextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode, type: selectedType, exclude_ids: excludeIds });
         return { question: data.question as Question, fromOffline: false };
       }
-      const data = await api.nextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode, type: selectedType });
+      const data = await api.nextQuestion({ subject: subj || track, track, difficulty: diff, source: selectedSource, mode, type: selectedType, exclude_ids: excludeIds });
       user.deductQuestion();
       return { question: data.question as Question, fromOffline: false };
     } catch (err: unknown) {
@@ -273,10 +274,11 @@ function QuizContent() {
       } catch { /* offline */ }
     }
     game.startSession({ mode, track, subject: selectedSubject, difficulty: selectedDifficulty, time_limit_minutes: selectedTime, question_count: selectedCount });
-    const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, queue, 0);
+    const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, queue, 0, []);
     if (!q) { setPhase("setup"); return; }
     setIsOffline(fromOffline);
     setCurrentQuestion(q);
+    setAskedQuestionIds([q.id]);
     setQuestionIndex(0);
     setCombo(0);
     setPhase("active");
@@ -365,13 +367,18 @@ function QuizContent() {
               };
             } else {
               nextActionRef.current = async () => {
-                const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex);
-                if (q) { setIsOffline(fromOffline); setCurrentQuestion(q); setQuestionIndex(nextIndex); }
+                const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex, askedQuestionIds);
+                if (q) {
+                  setIsOffline(fromOffline);
+                  setCurrentQuestion(q);
+                  setQuestionIndex(nextIndex);
+                  setAskedQuestionIds([...askedQuestionIds, q.id]);
+                }
                 setEssayResult(null);
                 setIsRevealing(false);
               };
             }
-            setCountdown(20);
+            setCountdown(40);
             return;
           }
 
@@ -387,11 +394,12 @@ function QuizContent() {
             return;
           }
 
-          const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex);
+          const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex, askedQuestionIds);
           if (q) {
             setIsOffline(fromOffline);
             setCurrentQuestion(q);
             setQuestionIndex(nextIndex);
+            setAskedQuestionIds([...askedQuestionIds, q.id]);
           }
           setIsRevealing(false);
           return;
@@ -407,8 +415,13 @@ function QuizContent() {
         setIsRevealing(false);
         await finishSession();
       } else {
-        const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex);
-        if (q) { setIsOffline(fromOffline); setCurrentQuestion(q); setQuestionIndex(nextIndex); }
+        const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex, askedQuestionIds);
+        if (q) {
+          setIsOffline(fromOffline);
+          setCurrentQuestion(q);
+          setQuestionIndex(nextIndex);
+          setAskedQuestionIds([...askedQuestionIds, q.id]);
+        }
         setIsRevealing(false);
       }
       return;
@@ -438,8 +451,13 @@ function QuizContent() {
       return;
     }
     nextActionRef.current = async () => {
-      const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex);
-      if (q) { setIsOffline(fromOffline); setCurrentQuestion(q); setQuestionIndex(nextIndex); }
+      const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex, askedQuestionIds);
+      if (q) {
+        setIsOffline(fromOffline);
+        setCurrentQuestion(q);
+        setQuestionIndex(nextIndex);
+        setAskedQuestionIds([...askedQuestionIds, q.id]);
+      }
       setIsRevealing(false);
     };
     setCountdown(20);
