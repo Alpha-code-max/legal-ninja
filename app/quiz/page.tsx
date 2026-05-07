@@ -378,13 +378,30 @@ function QuizContent() {
           // Correct essay: show XP popup, then continue
           setXpPopup({ xp: result.xpGained, correct: true });
           setTimeout(() => setXpPopup(null), 1400);
+
+          // Continue to next question
+          const nextIndex = questionIndex + 1;
+          if (nextIndex >= selectedCount) {
+            setIsRevealing(false);
+            await finishSession();
+            return;
+          }
+
+          const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex);
+          if (q) {
+            setIsOffline(fromOffline);
+            setCurrentQuestion(q);
+            setQuestionIndex(nextIndex);
+          }
+          setIsRevealing(false);
+          return;
         } catch (err) {
           console.error("Essay grading error:", err);
           // Continue without grading on error
         }
       }
 
-      // Continue to next question (correct, offline, or error)
+      // Continue to next question (offline or error fallback)
       const nextIndex = questionIndex + 1;
       if (nextIndex >= selectedCount) {
         setIsRevealing(false);
