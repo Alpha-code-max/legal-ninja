@@ -43,20 +43,33 @@ export function ContentTab({ adminKey }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const [b, p, pdfList] = await Promise.all([
-        adminApi.getBankStats(adminKey),
-        fetch(`/api/admin/questions/pending`, {
-          headers: { "x-admin-key": adminKey },
-        }).then((r) => r.json()),
-        adminApi.listPdfs(adminKey),
-      ]);
+      let b, p, pdfList;
+
+      try {
+        b = await adminApi.getBankStats(adminKey);
+      } catch (err) {
+        throw new Error(`Banks: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      try {
+        p = await adminApi.getPendingQuestions(adminKey);
+      } catch (err) {
+        throw new Error(`Pending: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      try {
+        pdfList = await adminApi.listPdfs(adminKey);
+      } catch (err) {
+        throw new Error(`PDFs: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
       setBanks(b || []);
       setPending(p || []);
       setPdfs(pdfList || []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("Failed to load content:", msg);
-      setError(`Failed to load: ${msg}`);
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -153,7 +153,24 @@ async function adminRequest<T>(path: string, options: RequestInit = {}, key: str
       ...(options.headers ?? {}),
     },
   });
-  const data = await res.json();
+
+  let data: any;
+  const contentType = res.headers.get("content-type");
+
+  if (contentType?.includes("application/json")) {
+    try {
+      data = await res.json();
+    } catch (err) {
+      throw new Error(`Invalid JSON response: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  } else {
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${text.substring(0, 200)}`);
+    }
+    throw new Error(`Expected JSON but got ${contentType || "unknown content type"}`);
+  }
+
   if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
   return data as T;
 }
@@ -310,6 +327,9 @@ export const adminApi = {
 
   getSubjectAnalytics: (key: string) =>
     adminRequest<SubjectAnalytics[]>("/admin/analytics/subjects", {}, key),
+
+  getPendingQuestions: (key: string) =>
+    adminRequest<any[]>("/admin/questions/pending", {}, key),
 
   getUserGrowth: (key: string, days: number = 30) =>
     adminRequest<GrowthData[]>(`/admin/analytics/users/growth?days=${days}`, {}, key),
