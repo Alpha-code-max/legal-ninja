@@ -62,7 +62,7 @@ export const api = {
 
   // User
   getMe: () => request<{
-    id: string; username: string; email: string; avatar_url: string; country: string; track: string; role?: string;
+    id: string; username: string; email: string; avatar_url: string; country: string; law_school?: string; university?: string; track: string; role?: string;
     xp: number; level: number; current_streak: number; longest_streak: number;
     total_questions_answered: number; total_correct_answers: number;
     free_questions_remaining: number; paid_questions_balance: number; earned_questions_balance: number;
@@ -70,7 +70,7 @@ export const api = {
     badges: string[]; weak_areas: string[]; referral_count: number; referral_code: string;
     daily_goal: { progress: number; target: number; completed: boolean };
   }>("/users/me"),
-  updateMe: (body: { username?: string; avatar_url?: string; country?: string; track?: string; role?: string; university?: string }) =>
+  updateMe: (body: { username?: string; avatar_url?: string; country?: string; track?: string; role?: string; law_school?: string; university?: string }) =>
     request<unknown>("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
   getBalance: () => request<{
     free_questions_remaining: number;

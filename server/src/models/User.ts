@@ -6,6 +6,8 @@ export interface IUser extends Document {
   password_hash: string;
   avatar_url: string;
   country: string;
+  law_school?: string;
+  university?: string;
   track: string;
   role?: "law_student" | "bar_student" | "admin";
   xp: number;
@@ -47,6 +49,8 @@ const UserSchema = new Schema<IUser>(
     password_hash:             { type: String, required: true },
     avatar_url:                { type: String, default: "" },
     country:                   { type: String, default: "NG", maxlength: 2 },
+    law_school:                { type: String, default: "", maxlength: 100 },
+    university:                { type: String, default: "", maxlength: 100 },
     track:                     { type: String, default: "law_school_track" },
     role:                      { type: String, enum: ["law_student","bar_student","admin"], default: "law_student" },
     xp:                        { type: Number, default: 0 },

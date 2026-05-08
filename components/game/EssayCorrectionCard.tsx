@@ -46,7 +46,7 @@ export function EssayCorrectionCard({ score, correctAnswer, feedback, countdown,
                borderColor: "var(--cyber-purple)",
              }}>
           <p className="text-sm leading-relaxed" style={{ color: "var(--text-base)" }}>
-            {correctAnswer}
+            {correctAnswer || "Review the question and focus on key legal principles, relevant case law, and statutory references."}
           </p>
         </div>
       </div>

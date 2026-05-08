@@ -13,6 +13,8 @@ const UpdateProfileSchema = z.object({
   username:   z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/).optional(),
   avatar_url: z.string().url().max(500).optional(),
   country:    z.string().length(2).optional(),
+  law_school: z.string().max(100).optional(),
+  university: z.string().max(100).optional(),
   track:      z.enum(["law_school_track", "undergraduate_track"]).optional(),
   role:       z.enum(["law_student", "bar_student"]).optional(),
 });

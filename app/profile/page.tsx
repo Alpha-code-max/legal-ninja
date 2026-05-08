@@ -73,6 +73,8 @@ export default function ProfilePage() {
   const [editName,   setEditName]   = useState(user.username ?? "");
   const [editTrack,  setEditTrack]  = useState(user.track ?? "law_school_track");
   const [editRole,   setEditRole]   = useState(user.role ?? "law_student");
+  const [editSchool, setEditSchool] = useState(user.law_school ?? "");
+  const [editUniversity, setEditUniversity] = useState(user.university ?? "");
   const [saving,     setSaving]     = useState(false);
   const [saveError,  setSaveError]  = useState("");
 
@@ -97,6 +99,8 @@ export default function ProfilePage() {
         referral_code:           me.referral_code,
         track:                   me.track,
         role:                    me.role ?? "law_student",
+        law_school:              me.law_school,
+        university:              me.university,
       });
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,8 +109,14 @@ export default function ProfilePage() {
   const saveProfile = async () => {
     setSaving(true); setSaveError("");
     try {
-      await api.updateMe({ username: editName.trim() || undefined, track: editTrack as "law_school_track" | "undergraduate_track", role: editRole });
-      user.setUser({ username: editName.trim(), track: editTrack, role: editRole });
+      await api.updateMe({
+        username: editName.trim() || undefined,
+        track: editTrack as "law_school_track" | "undergraduate_track",
+        role: editRole,
+        law_school: editSchool.trim() || undefined,
+        university: editUniversity.trim() || undefined,
+      });
+      user.setUser({ username: editName.trim(), track: editTrack, role: editRole, law_school: editSchool.trim(), university: editUniversity.trim() });
       setEditOpen(false);
     } catch (err) {
       setSaveError(err instanceof Error && err.message.includes("taken") ? "Username already taken." : "Failed to save changes.");
@@ -133,7 +143,14 @@ export default function ProfilePage() {
           <button onClick={() => router.back()} className="transition-colors text-sm font-bold" style={{ color: "var(--text-muted)" }}>← Back</button>
           <h1 className="text-xl font-black gradient-text">Profile</h1>
           <div className="flex items-center gap-2">
-            <button onClick={() => { setEditName(user.username ?? ""); setEditTrack(user.track ?? "law_school_track"); setEditRole(user.role ?? "law_student"); setEditOpen(true); }}
+            <button onClick={() => {
+            setEditName(user.username ?? "");
+            setEditTrack(user.track ?? "law_school_track");
+            setEditRole(user.role ?? "law_student");
+            setEditSchool(user.law_school ?? "");
+            setEditUniversity(user.university ?? "");
+            setEditOpen(true);
+          }}
               className="text-xs px-3 py-1.5 rounded-lg border font-bold transition-all"
               style={{ borderColor: "var(--cyber-cyan)", color: "var(--cyber-cyan)", background: "color-mix(in srgb, var(--cyber-cyan) 8%, transparent)" }}>
               Edit
@@ -270,6 +287,34 @@ export default function ProfilePage() {
           </motion.div>
         )}
 
+        {/* Educational Info */}
+        {(user.law_school || user.university) && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="cyber-card p-5 space-y-3"
+          >
+            <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+              🎓 Educational Background
+            </h3>
+            <div className="space-y-2">
+              {user.law_school && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest font-black" style={{ color: "var(--text-muted)" }}>Law School</p>
+                  <p className="text-sm" style={{ color: "var(--text-base)" }}>{user.law_school}</p>
+                </div>
+              )}
+              {user.university && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest font-black" style={{ color: "var(--text-muted)" }}>University</p>
+                  <p className="text-sm" style={{ color: "var(--text-base)" }}>{user.university}</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Referral stats */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -334,6 +379,22 @@ export default function ProfilePage() {
                 <option value="law_student">📖 Law Student — All subjects</option>
                 <option value="bar_student">🎓 Bar Student — Bar exam subjects only</option>
               </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Law School</label>
+              <input value={editSchool} onChange={(e) => setEditSchool(e.target.value)} maxLength={100}
+                placeholder="e.g., Nigerian Law School, Lagos"
+                className="w-full px-4 py-2.5 rounded-xl text-sm bg-transparent border focus:outline-none"
+                style={{ borderColor: "var(--cyber-border)", color: "var(--text-base)" }} />
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>University</label>
+              <input value={editUniversity} onChange={(e) => setEditUniversity(e.target.value)} maxLength={100}
+                placeholder="e.g., University of Lagos"
+                className="w-full px-4 py-2.5 rounded-xl text-sm bg-transparent border focus:outline-none"
+                style={{ borderColor: "var(--cyber-border)", color: "var(--text-base)" }} />
             </div>
 
             {saveError && <p className="text-xs" style={{ color: "var(--cyber-red)" }}>{saveError}</p>}

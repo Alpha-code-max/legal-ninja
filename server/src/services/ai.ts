@@ -18,13 +18,14 @@ const EXPLANATION_PROMPT = `You are a strict law tutor. Explain concisely why an
 
 const GRADING_SYSTEM_PROMPT = `You are an expert legal examiner. Your task is to grade a law student's essay answer based on a model answer and a specific rubric.
 Provide a fair, professional, and detailed assessment focusing on legal accuracy, application of principles, and clarity.
+IMPORTANT: Always return a correct_answer field — this is what students see to learn from their mistakes.
 Return valid JSON only with the following structure:
 {
   "score": number (0-100),
-  "feedback": "string (general summary)",
-  "correct_answer": "string (concise 2-3 sentence correct answer for student review — do not exceed 60 words)",
-  "strengths": ["string", "string"],
-  "weaknesses": ["string", "string"]
+  "feedback": "string (general summary of the student's performance)",
+  "correct_answer": "string (REQUIRED: concise 2-3 sentence correct answer for student review — max 60 words — use model_answer if provided, otherwise derive from question)",
+  "strengths": ["strength1", "strength2"],
+  "weaknesses": ["weakness1", "weakness2"]
 }`;
 
 export interface GradeEssayParams {
@@ -80,7 +81,7 @@ Return ONLY the JSON assessment.`;
       return {
         score: Number(parsed.score) || 0,
         feedback: String(parsed.feedback || ""),
-        correct_answer: String(parsed.correct_answer || ""),
+        correct_answer: String(parsed.correct_answer || params.modelAnswer || "Key points from the model answer and question context."),
         strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String) : [],
         weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.map(String) : [],
       };

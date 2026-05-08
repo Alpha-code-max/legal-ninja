@@ -14,6 +14,7 @@ export interface UserState {
   country: string;
   track: string;
   role: string;
+  law_school?: string;
   university?: string;
   total_questions_answered: number;
   total_correct_answers: number;
@@ -60,6 +61,7 @@ const DEFAULT_USER: UserState = {
   country: "NG",
   track: "law_school_track",
   role: "law_student",
+  law_school: "",
   university: "",
   total_questions_answered: 0,
   total_correct_answers: 0,

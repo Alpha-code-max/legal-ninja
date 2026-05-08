@@ -151,7 +151,7 @@ async function fetchQuestions(params: {
   if (isGeneralMode(subject)) {
     const subjects = TRACK_SUBJECTS[track] ?? TRACK_SUBJECTS.law_school_track;
 
-    // Try strict mode first (with approval filter)
+    // Try strict mode first (with approval filter) — get more than needed to ensure uniqueness
     let results = await Question.aggregate<IQuestion>([
       {
         $match: {
@@ -167,7 +167,7 @@ async function fetchQuestions(params: {
           ...yearFilter,
         },
       },
-      { $sample: { size: count } },
+      { $sample: { size: count * 3 } },
     ]);
 
     // Fallback: if no results, try without approval filter
@@ -186,11 +186,20 @@ async function fetchQuestions(params: {
             ...yearFilter,
           },
         },
-        { $sample: { size: count } },
+        { $sample: { size: count * 3 } },
       ]);
     }
 
-    return results;
+    // Deduplicate and return exactly 'count' questions
+    const seen = new Set<string>();
+    const unique = results.filter((q) => {
+      const id = String(q._id);
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+
+    return unique.slice(0, count);
   }
 
   // ── SPECIFIC SUBJECT MODE: serve ONLY from this subject's bank ───────────
@@ -219,20 +228,29 @@ async function fetchQuestions(params: {
   if (raw.length === 0) raw = await fetchFromBank(true, false);
   if (raw.length === 0) raw = await fetchFromBank(false, false);
 
-  return raw
-    .filter((q) => {
-      // Skip strict check for essay questions (they're manually curated)
-      if (q.type === "essay") return true;
+  const filtered = raw.filter((q) => {
+    // Skip strict check for essay questions (they're manually curated)
+    if (q.type === "essay") return true;
 
-      const fullText = [
-        q.question,
-        q.options?.A ?? "", q.options?.B ?? "", q.options?.C ?? "", q.options?.D ?? "",
-        q.explanation ?? "",
-        q.topic ?? "",
-      ].join(" ");
-      return questionPassesStrictCheck(fullText, subject);
-    })
-    .slice(0, count);
+    const fullText = [
+      q.question,
+      q.options?.A ?? "", q.options?.B ?? "", q.options?.C ?? "", q.options?.D ?? "",
+      q.explanation ?? "",
+      q.topic ?? "",
+    ].join(" ");
+    return questionPassesStrictCheck(fullText, subject);
+  });
+
+  // Deduplicate to prevent returning same question multiple times
+  const seen = new Set<string>();
+  const unique = filtered.filter((q) => {
+    const id = String(q._id);
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+
+  return unique.slice(0, count);
 }
 
 // ─── Balance check & deduction ────────────────────────────────────────────────

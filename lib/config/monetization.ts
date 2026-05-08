@@ -2,12 +2,13 @@ export const MONETIZATION = {
   model: "pay_per_question" as const,
   free_questions: 100,
   pricing: {
-    per_question_ngn: 10,
+    per_question_ngn: 1.67,
     bundles: [
-      { questions: 50,  price_ngn: 500,  savings: "0%",  popular: false },
-      { questions: 100, price_ngn: 1000, savings: "0%",  popular: true  },
-      { questions: 200, price_ngn: 1900, savings: "5%",  popular: false },
-      { questions: 500, price_ngn: 4500, savings: "10%", popular: false },
+      { questions: 6,   price_ngn: 10,   savings: "0%",  popular: true  },
+      { questions: 50,  price_ngn: 80,   savings: "0%",  popular: false },
+      { questions: 100, price_ngn: 165,  savings: "0%",  popular: false },
+      { questions: 200, price_ngn: 330,  savings: "0%",  popular: false },
+      { questions: 500, price_ngn: 800,  savings: "2%",  popular: false },
     ],
     passes: [
       {
