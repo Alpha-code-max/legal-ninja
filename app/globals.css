@@ -91,6 +91,18 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
 
+/* Sharp shadow for H1 — bold playful shadow */
+h1 {
+  text-shadow: 3px 3px 0px color-mix(in srgb, var(--cyber-purple) 60%, transparent),
+               6px 6px 0px color-mix(in srgb, var(--cyber-cyan) 40%, transparent);
+}
+
+/* Sharp shadow for H2 — slightly softer than H1 */
+h2 {
+  text-shadow: 2px 2px 0px color-mix(in srgb, var(--cyber-cyan) 60%, transparent),
+               4px 4px 0px color-mix(in srgb, var(--cyber-purple) 40%, transparent);
+}
+
 @layer utilities {
   .neon-text-cyan {
     color: var(--cyber-cyan);
