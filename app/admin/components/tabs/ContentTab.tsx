@@ -23,15 +23,25 @@ interface Props {
 }
 
 export function ContentTab({ adminKey }: Props) {
-  const [activeTab, setActiveTab] = useState<"banks" | "pending" | "pdfs">("banks");
+  const [activeTab, setActiveTab] = useState<"banks" | "pending" | "pdfs" | "generate">("banks");
   const [loading, setLoading] = useState(true);
   const [banks, setBanks] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [pdfs, setPdfs] = useState<any[]>([]);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Generate questions state
+  const [genSubject, setGenSubject] = useState(SUBJECTS[0]);
+  const [genTrack, setGenTrack] = useState("law_school_track");
+  const [genCount, setGenCount] = useState(5);
+  const [genDifficulty, setGenDifficulty] = useState("medium");
+  const [genType, setGenType] = useState("mixed");
+  const [genResult, setGenResult] = useState<any>(null);
 
   const reload = async () => {
     setLoading(true);
+    setError(null);
     try {
       const [b, p, pdfList] = await Promise.all([
         adminApi.getBankStats(adminKey),
@@ -40,13 +50,47 @@ export function ContentTab({ adminKey }: Props) {
         }).then((r) => r.json()),
         adminApi.listPdfs(adminKey),
       ]);
-      setBanks(b);
-      setPending(p);
-      setPdfs(pdfList);
+      setBanks(b || []);
+      setPending(p || []);
+      setPdfs(pdfList || []);
     } catch (err) {
-      console.error("Failed to load content:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Failed to load content:", msg);
+      setError(`Failed to load: ${msg}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    setProcessing("generate");
+    setGenResult(null);
+    try {
+      const res = await fetch("/api/admin/questions/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": adminKey,
+        },
+        body: JSON.stringify({
+          subject: genSubject,
+          track: genTrack,
+          difficulty: genDifficulty,
+          count: genCount,
+          type: genType,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setGenResult({ ok: true, count: data.created?.length || 0, message: `Generated ${data.created?.length || 0} questions` });
+        reload();
+      } else {
+        setGenResult({ ok: false, message: data.error });
+      }
+    } catch (err) {
+      setGenResult({ ok: false, message: String(err) });
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -94,12 +138,33 @@ export function ContentTab({ adminKey }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Error Message */}
+      {error && (
+        <div
+          className="p-3 rounded-lg text-sm border"
+          style={{
+            background: "rgba(255, 45, 85, 0.1)",
+            borderColor: "var(--cyber-red)",
+            color: "var(--cyber-red)",
+          }}
+        >
+          {error}
+          <button
+            onClick={reload}
+            className="ml-2 font-bold underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-2 border-b overflow-x-auto" style={{ borderColor: "var(--cyber-border)" }}>
         {[
           { id: "banks", label: "Question Banks" },
           { id: "pending", label: `Pending (${pending.length})` },
           { id: "pdfs", label: `PDFs (${pdfs.length})` },
+          { id: "generate", label: "Generate" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -245,13 +310,143 @@ export function ContentTab({ adminKey }: Props) {
         </div>
       )}
 
+      {/* Generate Questions */}
+      {activeTab === "generate" && (
+        <div className="cyber-card p-6 space-y-4">
+          <h3 className="text-lg font-black">Generate Questions</h3>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-black mb-2">Subject</label>
+              <select
+                value={genSubject}
+                onChange={(e) => setGenSubject(e.target.value)}
+                className="w-full p-3 rounded-lg border"
+                style={{
+                  borderColor: "var(--cyber-border)",
+                  background: "var(--cyber-bg)",
+                  color: "var(--text-base)",
+                }}
+              >
+                {SUBJECTS.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace(/_/g, " ")}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-black mb-2">Track</label>
+                <select
+                  value={genTrack}
+                  onChange={(e) => setGenTrack(e.target.value)}
+                  className="w-full p-3 rounded-lg border"
+                  style={{
+                    borderColor: "var(--cyber-border)",
+                    background: "var(--cyber-bg)",
+                    color: "var(--text-base)",
+                  }}
+                >
+                  <option value="law_school_track">Law School</option>
+                  <option value="undergraduate_track">Undergraduate</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black mb-2">Difficulty</label>
+                <select
+                  value={genDifficulty}
+                  onChange={(e) => setGenDifficulty(e.target.value)}
+                  className="w-full p-3 rounded-lg border"
+                  style={{
+                    borderColor: "var(--cyber-border)",
+                    background: "var(--cyber-bg)",
+                    color: "var(--text-base)",
+                  }}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-black mb-2">Type</label>
+                <select
+                  value={genType}
+                  onChange={(e) => setGenType(e.target.value)}
+                  className="w-full p-3 rounded-lg border"
+                  style={{
+                    borderColor: "var(--cyber-border)",
+                    background: "var(--cyber-bg)",
+                    color: "var(--text-base)",
+                  }}
+                >
+                  <option value="mcq">MCQ Only</option>
+                  <option value="essay">Essay Only</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black mb-2">Count</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={genCount}
+                  onChange={(e) => setGenCount(Number(e.target.value))}
+                  className="w-full p-3 rounded-lg border"
+                  style={{
+                    borderColor: "var(--cyber-border)",
+                    background: "var(--cyber-bg)",
+                    color: "var(--text-base)",
+                  }}
+                />
+              </div>
+            </div>
+
+            {genResult && (
+              <div
+                className="p-3 rounded-lg text-sm border"
+                style={{
+                  background: genResult.ok ? "rgba(34, 255, 136, 0.1)" : "rgba(255, 45, 85, 0.1)",
+                  borderColor: genResult.ok ? "var(--cyber-green)" : "var(--cyber-red)",
+                  color: genResult.ok ? "var(--cyber-green)" : "var(--cyber-red)",
+                }}
+              >
+                {genResult.message}
+              </div>
+            )}
+
+            <NeonButton
+              variant="purple"
+              fullWidth
+              onClick={handleGenerate}
+              disabled={processing === "generate"}
+            >
+              {processing === "generate" ? "Generating..." : "Generate Questions"}
+            </NeonButton>
+          </div>
+        </div>
+      )}
+
       {/* PDFs */}
       {activeTab === "pdfs" && (
         <div className="space-y-3">
           {loading ? (
             <div style={{ color: "var(--text-muted)" }}>Loading...</div>
           ) : pdfs.length === 0 ? (
-            <div style={{ color: "var(--text-muted)" }}>No PDFs uploaded</div>
+            <div className="cyber-card p-4 text-center space-y-3">
+              <p style={{ color: "var(--text-muted)" }}>No PDFs uploaded yet</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                Go to the <strong>Uploads</strong> tab to upload a PDF for question generation
+              </p>
+            </div>
           ) : (
             pdfs.map((pdf: any) => (
               <div
