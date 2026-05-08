@@ -723,7 +723,7 @@ router.get("/users", requireAdmin, async (req: Request, res) => {
       users: users.map((u) => ({
         id: String(u._id),
         email: u.email,
-        name: u.name,
+        username: u.username,
         role: u.role,
         track: u.track,
         university: u.university,
@@ -768,7 +768,7 @@ router.get("/users/:id", requireAdmin, async (req: Request, res) => {
     res.json({
       id: String(user._id),
       email: user.email,
-      name: user.name,
+      username: user.username,
       role: user.role,
       track: user.track,
       law_school: user.law_school,
@@ -783,10 +783,10 @@ router.get("/users/:id", requireAdmin, async (req: Request, res) => {
         id: String(s._id),
         mode: s.mode,
         subject: s.subject,
-        created_at: s.created_at,
+        started_at: s.started_at,
         status: s.status,
         score: s.score,
-        total_questions: s.total_questions,
+        question_count: s.question_count,
       })),
       recent_transactions: transactions.map((t) => ({
         id: String(t._id),
