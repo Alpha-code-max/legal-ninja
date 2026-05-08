@@ -64,7 +64,27 @@
       "WebSearch",
       "WebFetch(domain:legaldigitalng.com)",
       "Bash(Start-Sleep -Seconds 8)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "PowerShell(Start-Sleep -Seconds 5; $response = Invoke-WebRequest -Uri \"http://localhost:4000/api/questions/availability/constitutional_law\" -ErrorAction SilentlyContinue; $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 10)",
+      "Bash(chmod +x /tmp/test-essays.sh)",
+      "Bash(/tmp/test-essays.sh)",
+      "Bash(vercel --prod)",
+      "Bash(railway)",
+      "Bash(dockerfile)",
+      "Bash(heroku\" || echo \"No standard deployment config found\")",
+      "PowerShell(cd \"C:\\\\Users\\\\Hp\\\\Desktop\\\\Legal Ninja\"; $env:MONGODB_URI=\"mongodb+srv://onyekachukwuorji8112_db_user:TOorUaphPEKOC0Tv@cluster0.z48ul6s.mongodb.net/\"; node check-essay-count.js)",
+      "PowerShell(cd \"C:\\\\Users\\\\Hp\\\\Desktop\\\\Legal Ninja\"; $env:MONGODB_URI=\"mongodb+srv://onyekachukwuorji8112_db_user:TOorUaphPEKOC0Tv@cluster0.z48ul6s.mongodb.net/\"; node detailed-check.js)",
+      "PowerShell(cd \"C:\\\\Users\\\\Hp\\\\Desktop\\\\Legal Ninja\"; $env:MONGODB_URI=\"mongodb+srv://onyekachukwuorji8112_db_user:TOorUaphPEKOC0Tv@cluster0.z48ul6s.mongodb.net/\"; node test-stats.js)",
+      "PowerShell(Get-Process *)",
+      "Bash(vercel ls *)",
+      "Bash(vercel inspect *)",
+      "Bash(vercel deploy *)",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(git reset *)",
+      "Bash(npm ls *)",
+      "Bash(npx ts-node *)",
+      "Bash(npx dotenv *)",
+      "Bash(set \"MONGODB_URI=mongodb+srv://onyekachukwuorji8112_db_user:TOorUaphPEKOC0Tv@cluster0.z48ul6s.mongodb.net/\")"
     ]
   }
 }
