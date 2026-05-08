@@ -56,10 +56,25 @@ export function StudentOnboarding({ onComplete }: StudentOnboardingProps) {
         university,
         track: selectedTrack as "law_school_track" | "undergraduate_track"
       });
+
+      // Immediately update local store and also refresh from server for full sync
       updateUser({
         university,
         track: selectedTrack
       });
+
+      // Verify with server
+      try {
+        const me = await api.getMe();
+        updateUser({
+          university: me.university,
+          track: me.track,
+        });
+      } catch (err) {
+        // If refresh fails, we already updated locally, so continue
+        console.warn("Could not verify from server:", err);
+      }
+
       onComplete();
     } catch (err) {
       console.error("Failed to update profile:", err);

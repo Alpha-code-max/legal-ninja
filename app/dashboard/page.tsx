@@ -272,6 +272,11 @@ function DashboardContent() {
 
   const [showOnboarding, setShowOnboarding] = useState(!user.university);
 
+  // Update onboarding state when user data changes
+  useEffect(() => {
+    setShowOnboarding(!user.university || !user.track);
+  }, [user.university, user.track]);
+
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
   };
