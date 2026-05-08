@@ -152,7 +152,8 @@ export function UsersTab({ adminKey }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 flex items-end"
+            className="fixed inset-0 z-50 flex items-end"
+            style={{ background: "rgba(0, 0, 0, 0.5)" }}
             onClick={() => setSelectedUser(null)}
           >
             <motion.div
@@ -160,8 +161,11 @@ export function UsersTab({ adminKey }: Props) {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full sm:w-96 h-full bg-cyber-surface flex flex-col"
-              style={{ borderLeft: "1px solid var(--cyber-border)" }}
+              className="w-full sm:w-96 h-full flex flex-col"
+              style={{
+                background: "var(--cyber-bg)",
+                borderLeft: "1px solid var(--cyber-border)",
+              }}
             >
               <UserDetailModal
                 user={selectedUser}
