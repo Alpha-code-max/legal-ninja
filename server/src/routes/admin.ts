@@ -688,4 +688,464 @@ router.get("/questions/pending", requireAdmin, async (_req: Request, res) => {
   }
 });
 
+// ─── User Management Routes ────────────────────────────────────────────────────
+
+// GET /api/admin/users — paginated user list with filtering
+router.get("/users", requireAdmin, async (req: Request, res) => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Number(req.query.limit) || 20);
+    const search = String(req.query.search || "").trim();
+    const role = String(req.query.role || "").trim();
+    const track = String(req.query.track || "").trim();
+
+    const filter: any = {};
+    if (search) {
+      filter.$or = [
+        { email: { $regex: search, $options: "i" } },
+        { name: { $regex: search, $options: "i" } },
+      ];
+    }
+    if (role) filter.role = role;
+    if (track) filter.track = track;
+
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .sort({ created_at: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select("-password_hash")
+        .lean(),
+      User.countDocuments(filter),
+    ]);
+
+    res.json({
+      users: users.map((u) => ({
+        id: String(u._id),
+        email: u.email,
+        name: u.name,
+        role: u.role,
+        track: u.track,
+        university: u.university,
+        created_at: u.created_at,
+        last_login_at: u.last_login_at,
+        free_questions_remaining: u.free_questions_remaining,
+        paid_questions_balance: u.paid_questions_balance,
+        earned_questions_balance: u.earned_questions_balance,
+      })),
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// GET /api/admin/users/:id — detailed user view with sessions and transactions
+router.get("/users/:id", requireAdmin, async (req: Request, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(String(req.params.id));
+    const [user, sessions, transactions] = await Promise.all([
+      User.findById(userId).select("-password_hash").lean(),
+      GameSession.find({ user_id: userId })
+        .sort({ created_at: -1 })
+        .limit(10)
+        .lean(),
+      Transaction.find({ user_id: userId })
+        .sort({ created_at: -1 })
+        .limit(10)
+        .lean(),
+    ]);
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({
+      id: String(user._id),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      track: user.track,
+      law_school: user.law_school,
+      university: user.university,
+      created_at: user.created_at,
+      last_login_at: user.last_login_at,
+      free_questions_remaining: user.free_questions_remaining,
+      paid_questions_balance: user.paid_questions_balance,
+      earned_questions_balance: user.earned_questions_balance,
+      active_passes: user.active_passes,
+      recent_sessions: sessions.map((s) => ({
+        id: String(s._id),
+        mode: s.mode,
+        subject: s.subject,
+        created_at: s.created_at,
+        status: s.status,
+        score: s.score,
+        total_questions: s.total_questions,
+      })),
+      recent_transactions: transactions.map((t) => ({
+        id: String(t._id),
+        created_at: t.created_at,
+        amount_ngn: t.amount_ngn,
+        questions_added: t.questions_added,
+        status: t.status,
+        type: t.pass_activated ? "pass" : "bundle",
+      })),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch user details" });
+  }
+});
+
+// PATCH /api/admin/users/:id/balance — adjust user balance
+router.patch("/users/:id/balance", requireAdmin, async (req: Request, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(String(req.params.id));
+    const { field, delta } = req.body as { field: string; delta: number };
+
+    const allowedFields = [
+      "free_questions_remaining",
+      "paid_questions_balance",
+      "earned_questions_balance",
+    ];
+    if (!allowedFields.includes(field) || typeof delta !== "number") {
+      res.status(400).json({ error: "Invalid field or delta" });
+      return;
+    }
+
+    const updateObj: any = {};
+    updateObj[field] = delta;
+    const updated = await User.findByIdAndUpdate(userId, { $inc: updateObj }, { new: true })
+      .select("-password_hash")
+      .lean();
+
+    if (!updated) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({
+      id: String(updated._id),
+      free_questions_remaining: updated.free_questions_remaining,
+      paid_questions_balance: updated.paid_questions_balance,
+      earned_questions_balance: updated.earned_questions_balance,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update balance" });
+  }
+});
+
+// PATCH /api/admin/users/:id/role — update user role
+router.patch("/users/:id/role", requireAdmin, async (req: Request, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(String(req.params.id));
+    const { role } = req.body as { role: string };
+
+    const validRoles = ["law_student", "bar_student", "admin"];
+    if (!validRoles.includes(role)) {
+      res.status(400).json({ error: "Invalid role" });
+      return;
+    }
+
+    const updated = await User.findByIdAndUpdate(userId, { role }, { new: true })
+      .select("-password_hash")
+      .lean();
+
+    if (!updated) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({ id: String(updated._id), role: updated.role });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update role" });
+  }
+});
+
+// ─── Analytics Routes ──────────────────────────────────────────────────────────
+
+// GET /api/admin/analytics/overview — dashboard KPI cards
+router.get("/analytics/overview", requireAdmin, async (_req: Request, res) => {
+  try {
+    const now = new Date();
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [dau, mau, newUsersToday, newUsersWeek, newUsersMonth, sessionsLast24h, sessionLast7d, avgScoreLast30d] =
+      await Promise.all([
+        User.countDocuments({ last_login_at: { $gte: last24h } }),
+        User.countDocuments({ last_login_at: { $gte: last30d } }),
+        User.countDocuments({ created_at: { $gte: last24h } }),
+        User.countDocuments({ created_at: { $gte: last7d } }),
+        User.countDocuments({ created_at: { $gte: last30d } }),
+        GameSession.countDocuments({ status: "finished", created_at: { $gte: last24h } }),
+        GameSession.countDocuments({ status: "finished", created_at: { $gte: last7d } }),
+        GameSession.aggregate([
+          { $match: { status: "finished", created_at: { $gte: last30d } } },
+          { $group: { _id: null, avgScore: { $avg: "$score" } } },
+        ]),
+      ]);
+
+    res.json({
+      dau,
+      mau,
+      new_users_today: newUsersToday,
+      new_users_week: newUsersWeek,
+      new_users_month: newUsersMonth,
+      sessions_last_24h: sessionsLast24h,
+      sessions_last_7d: sessionLast7d,
+      avg_score_last_30d: avgScoreLast30d[0]?.avgScore ?? 0,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch overview analytics" });
+  }
+});
+
+// GET /api/admin/analytics/sessions — session breakdown by mode, subject, difficulty, grade
+router.get("/analytics/sessions", requireAdmin, async (req: Request, res) => {
+  try {
+    const days = Math.min(90, Number(req.query.days) || 30);
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const [byMode, bySubject, byDifficulty, gradeDistribution, summary] = await Promise.all([
+      GameSession.aggregate([
+        { $match: { status: "finished", created_at: { $gte: since } } },
+        {
+          $group: {
+            _id: "$mode",
+            count: { $sum: 1 },
+            avg_score: { $avg: "$score" },
+            avg_xp: { $avg: "$xp_earned" },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]),
+      GameSession.aggregate([
+        { $match: { status: "finished", created_at: { $gte: since } } },
+        {
+          $group: {
+            _id: "$subject",
+            count: { $sum: 1 },
+            avg_score: { $avg: "$score" },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]),
+      GameSession.aggregate([
+        { $match: { status: "finished", created_at: { $gte: since } } },
+        {
+          $group: {
+            _id: "$difficulty",
+            count: { $sum: 1 },
+            avg_score: { $avg: "$score" },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+      GameSession.aggregate([
+        { $match: { status: "finished", created_at: { $gte: since } } },
+        { $group: { _id: "$grade", count: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]),
+      GameSession.aggregate([
+        { $match: { status: "finished", created_at: { $gte: since } } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            avg_percentage: { $avg: "$percentage" },
+            avg_xp: { $avg: "$xp_earned" },
+            total_xp: { $sum: "$xp_earned" },
+          },
+        },
+      ]),
+    ]);
+
+    res.json({
+      by_mode: byMode,
+      by_subject: bySubject,
+      by_difficulty: byDifficulty,
+      grade_distribution: gradeDistribution,
+      summary: summary[0] || { total: 0, avg_percentage: 0, avg_xp: 0, total_xp: 0 },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch session analytics" });
+  }
+});
+
+// GET /api/admin/analytics/subjects — subject performance and question bank stats
+router.get("/analytics/subjects", requireAdmin, async (_req: Request, res) => {
+  try {
+    const [sessionStats, questionStats] = await Promise.all([
+      GameSession.aggregate([
+        { $match: { status: "finished" } },
+        {
+          $group: {
+            _id: "$subject",
+            sessions: { $sum: 1 },
+            avg_accuracy: { $avg: "$percentage" },
+            total_xp: { $sum: "$xp_earned" },
+          },
+        },
+      ]),
+      Question.aggregate([
+        {
+          $group: {
+            _id: "$subject",
+            total: { $sum: 1 },
+            used_count: { $sum: "$used_count" },
+            approved: {
+              $sum: { $cond: ["$approved", 1, 0] },
+            },
+            pending: {
+              $sum: { $cond: ["$approved", 0, 1] },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const merged = VALID_SUBJECTS.map((subject) => {
+      const session = sessionStats.find((s) => s._id === subject);
+      const question = questionStats.find((q) => q._id === subject);
+      return {
+        subject,
+        sessions: session?.sessions ?? 0,
+        avg_accuracy: session?.avg_accuracy ?? 0,
+        total_xp: session?.total_xp ?? 0,
+        total_questions: question?.total ?? 0,
+        used_count: question?.used_count ?? 0,
+        approved: question?.approved ?? 0,
+        pending: question?.pending ?? 0,
+      };
+    });
+
+    res.json(merged);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch subject analytics" });
+  }
+});
+
+// GET /api/admin/analytics/users/growth — daily user registration trend
+router.get("/analytics/users/growth", requireAdmin, async (req: Request, res) => {
+  try {
+    const days = Math.min(90, Number(req.query.days) || 30);
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const dailyRegistrations = await User.aggregate([
+      { $match: { created_at: { $gte: since } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$created_at", timezone: "Africa/Lagos" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const dateMap = new Map(dailyRegistrations.map((d) => [d._id, d.count]));
+
+    // Fill in zero-count days
+    const result = [];
+    for (let i = 0; i < days; i++) {
+      const date = new Date(Date.now() - (days - 1 - i) * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split("T")[0];
+      result.push({
+        date: dateStr,
+        count: dateMap.get(dateStr) ?? 0,
+      });
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch user growth analytics" });
+  }
+});
+
+// GET /api/admin/analytics/revenue — daily revenue and pass type breakdown
+router.get("/analytics/revenue", requireAdmin, async (req: Request, res) => {
+  try {
+    const days = Math.min(90, Number(req.query.days) || 30);
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const [dailyRevenue, byPassType, summary] = await Promise.all([
+      Transaction.aggregate([
+        { $match: { status: "success", created_at: { $gte: since } } },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$created_at", timezone: "Africa/Lagos" },
+            },
+            revenue: { $sum: "$amount_ngn" },
+            count: { $sum: 1 },
+            questions_added: { $sum: "$questions_added" },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+      Transaction.aggregate([
+        { $match: { status: "success" } },
+        {
+          $group: {
+            _id: { $ifNull: ["$pass_activated", "bundle"] },
+            count: { $sum: 1 },
+            total_revenue: { $sum: "$amount_ngn" },
+          },
+        },
+        { $sort: { total_revenue: -1 } },
+      ]),
+      Transaction.aggregate([
+        { $match: { status: "success", created_at: { $gte: since } } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$amount_ngn" },
+            count: { $sum: 1 },
+            avg_txn: { $avg: "$amount_ngn" },
+            max_txn: { $max: "$amount_ngn" },
+          },
+        },
+      ]),
+    ]);
+
+    const dateMap = new Map(dailyRevenue.map((d) => [d._id, d]));
+    const daily = [];
+    for (let i = 0; i < days; i++) {
+      const date = new Date(Date.now() - (days - 1 - i) * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split("T")[0];
+      const d = dateMap.get(dateStr);
+      daily.push({
+        date: dateStr,
+        revenue: d?.revenue ?? 0,
+        count: d?.count ?? 0,
+        questions_added: d?.questions_added ?? 0,
+      });
+    }
+
+    res.json({
+      daily,
+      by_type: byPassType,
+      summary: summary[0] || { total: 0, count: 0, avg_txn: 0, max_txn: 0 },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch revenue analytics" });
+  }
+});
+
 export default router;

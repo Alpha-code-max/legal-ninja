@@ -44,6 +44,106 @@ export interface Transaction {
   pending_mins?: number;
 }
 
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  track?: string;
+  university?: string;
+  created_at: string;
+  last_login_at?: string;
+  free_questions_remaining: number;
+  paid_questions_balance: number;
+  earned_questions_balance: number;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  law_school?: string;
+  active_passes?: any[];
+  recent_sessions: {
+    id: string;
+    mode: string;
+    subject: string;
+    created_at: string;
+    status: string;
+    score: number;
+    total_questions: number;
+  }[];
+  recent_transactions: {
+    id: string;
+    created_at: string;
+    amount_ngn: number;
+    questions_added: number;
+    status: string;
+    type: string;
+  }[];
+}
+
+export interface UserListResponse {
+  users: AdminUser[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+export interface OverviewAnalytics {
+  dau: number;
+  mau: number;
+  new_users_today: number;
+  new_users_week: number;
+  new_users_month: number;
+  sessions_last_24h: number;
+  sessions_last_7d: number;
+  avg_score_last_30d: number;
+}
+
+export interface SessionAnalytics {
+  by_mode: any[];
+  by_subject: any[];
+  by_difficulty: any[];
+  grade_distribution: any[];
+  summary: {
+    total: number;
+    avg_percentage: number;
+    avg_xp: number;
+    total_xp: number;
+  };
+}
+
+export interface SubjectAnalytics {
+  subject: string;
+  sessions: number;
+  avg_accuracy: number;
+  total_xp: number;
+  total_questions: number;
+  used_count: number;
+  approved: number;
+  pending: number;
+}
+
+export interface GrowthData {
+  date: string;
+  count: number;
+}
+
+export interface RevenueAnalytics {
+  daily: {
+    date: string;
+    revenue: number;
+    count: number;
+    questions_added: number;
+  }[];
+  by_type: any[];
+  summary: {
+    total: number;
+    count: number;
+    avg_txn: number;
+    max_txn: number;
+  };
+}
+
 async function adminRequest<T>(path: string, options: RequestInit = {}, key: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -164,4 +264,48 @@ export const adminApi = {
     adminRequest<{ success: boolean; message: string }>(
       `/admin/payments/${reference}/process`, { method: "POST" }, key
     ),
+
+  // User management endpoints
+  listUsers: (key: string, params?: { page?: number; limit?: number; search?: string; role?: string; track?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set("page", String(params.page));
+    if (params?.limit) qs.set("limit", String(params.limit));
+    if (params?.search) qs.set("search", params.search);
+    if (params?.role) qs.set("role", params.role);
+    if (params?.track) qs.set("track", params.track);
+    return adminRequest<UserListResponse>(`/admin/users?${qs.toString()}`, {}, key);
+  },
+
+  getUser: (key: string, id: string) =>
+    adminRequest<AdminUserDetail>(`/admin/users/${id}`, {}, key),
+
+  updateBalance: (key: string, id: string, field: string, delta: number) =>
+    adminRequest<{ id: string; free_questions_remaining: number; paid_questions_balance: number; earned_questions_balance: number }>(
+      `/admin/users/${id}/balance`,
+      { method: "PATCH", body: JSON.stringify({ field, delta }) },
+      key
+    ),
+
+  updateRole: (key: string, id: string, role: string) =>
+    adminRequest<{ id: string; role: string }>(
+      `/admin/users/${id}/role`,
+      { method: "PATCH", body: JSON.stringify({ role }) },
+      key
+    ),
+
+  // Analytics endpoints
+  getOverviewAnalytics: (key: string) =>
+    adminRequest<OverviewAnalytics>("/admin/analytics/overview", {}, key),
+
+  getSessionAnalytics: (key: string, days: number = 30) =>
+    adminRequest<SessionAnalytics>(`/admin/analytics/sessions?days=${days}`, {}, key),
+
+  getSubjectAnalytics: (key: string) =>
+    adminRequest<SubjectAnalytics[]>("/admin/analytics/subjects", {}, key),
+
+  getUserGrowth: (key: string, days: number = 30) =>
+    adminRequest<GrowthData[]>(`/admin/analytics/users/growth?days=${days}`, {}, key),
+
+  getRevenueAnalytics: (key: string, days: number = 30) =>
+    adminRequest<RevenueAnalytics>(`/admin/analytics/revenue?days=${days}`, {}, key),
 };
