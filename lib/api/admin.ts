@@ -176,7 +176,15 @@ export const adminApi = {
       headers: { "x-admin-key": key },
       body: form,
     });
-    const data = await res.json();
+
+    let data: any;
+    try {
+      data = await res.json();
+    } catch (err) {
+      const text = await res.text();
+      throw new Error(`Failed to parse response: ${text || `HTTP ${res.status}`}`);
+    }
+
     if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
     return data as { documentId: string; chunkCount: number; pageCount: number; message: string };
   },

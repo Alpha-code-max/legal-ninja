@@ -84,7 +84,8 @@
       "Bash(npm ls *)",
       "Bash(npx ts-node *)",
       "Bash(npx dotenv *)",
-      "Bash(set \"MONGODB_URI=mongodb+srv://onyekachukwuorji8112_db_user:TOorUaphPEKOC0Tv@cluster0.z48ul6s.mongodb.net/\")"
+      "Bash(set \"MONGODB_URI=mongodb+srv://onyekachukwuorji8112_db_user:TOorUaphPEKOC0Tv@cluster0.z48ul6s.mongodb.net/\")",
+      "Bash(git rm *)"
     ]
   }
 }

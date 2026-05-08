@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { adminApi } from "@/lib/api/admin";
 import { NeonButton } from "@/components/ui/NeonButton";
 
 const SUBJECTS = [
@@ -32,26 +33,12 @@ export function UploadsTab({ adminKey }: Props) {
     if (!file) return;
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append("pdf", file);
-      form.append("subject", subject);
-      form.append("track", track);
-
-      const res = await fetch("/api/admin/pdfs/upload", {
-        method: "POST",
-        headers: { "x-admin-key": adminKey },
-        body: form,
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setResult({ ok: true, message: data.message });
-        setFile(null);
-      } else {
-        setResult({ ok: false, message: data.error });
-      }
+      const result = await adminApi.uploadPdf(adminKey, file, subject, track);
+      setResult({ ok: true, message: result.message });
+      setFile(null);
     } catch (err) {
-      setResult({ ok: false, message: String(err) });
+      const msg = err instanceof Error ? err.message : String(err);
+      setResult({ ok: false, message: msg });
     } finally {
       setUploading(false);
     }
