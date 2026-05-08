@@ -177,7 +177,7 @@ export default function StorePage() {
               </div>
             </div>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Each question costs <span className="font-black neon-text-cyan">{formatNGN(10)}</span>
+              6 questions for <span className="font-black neon-text-cyan">{formatNGN(10)}</span>
             </p>
             <p className="text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>
               Questions used in order: <span style={{ color: "var(--cyber-green)" }}>Earned</span> → <span style={{ color: "var(--cyber-cyan)" }}>Paid</span> → <span style={{ color: "var(--cyber-purple)" }}>Free</span>

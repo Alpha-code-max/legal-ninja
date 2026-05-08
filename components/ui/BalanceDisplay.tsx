@@ -38,7 +38,7 @@ export function BalanceDisplay({ className, compact = false }: Props) {
     <div className={cn("cyber-card p-4 space-y-3", className)}>
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-sm text-gray-300">Question Balance</h3>
-        <span className="text-xs text-gray-500">₦10 per question</span>
+        <span className="text-xs text-gray-500">₦10 per 6 questions</span>
       </div>
 
       <div
