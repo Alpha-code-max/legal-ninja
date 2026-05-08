@@ -52,11 +52,17 @@ export function StudentOnboarding({ onComplete }: StudentOnboardingProps) {
 
     setLoading(true);
     try {
-      await api.updateMe({ university });
-      updateUser({ university });
+      await api.updateMe({
+        university,
+        track: selectedTrack as "law_school_track" | "undergraduate_track"
+      });
+      updateUser({
+        university,
+        track: selectedTrack
+      });
       onComplete();
     } catch (err) {
-      console.error("Failed to update university:", err);
+      console.error("Failed to update profile:", err);
       alert("Failed to save. Please try again.");
     } finally {
       setLoading(false);
