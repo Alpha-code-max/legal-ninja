@@ -13,6 +13,7 @@ export interface Question {
   difficulty: Difficulty;
   subject: string;
   topic: string;
+  passage?: string;
   explanation?: string;
 }
 

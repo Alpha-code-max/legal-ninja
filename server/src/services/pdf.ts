@@ -165,7 +165,7 @@ export async function populateQuestionBankFromPdf(params: {
               const fullText = [aiQ.question, aiQ.options?.A, aiQ.options?.B, aiQ.options?.C, aiQ.options?.D, aiQ.explanation ?? "", aiQ.topic ?? ""].join(" ");
               if (!questionPassesStrictCheck(fullText, subject, true)) { mcqFailed++; return; }
               if (await Question.exists({ subject, question: aiQ.question })) { mcqFailed++; return; }
-              await Question.create({ subject, track, difficulty: "medium", type: "mcq", question: aiQ.question, options: aiQ.options, correct_option: aiQ.correct_option, explanation: aiQ.explanation, topic: aiQ.topic, source: "ai", source_document_id: docObjectId, used_count: 0, approved: true, validated: true, allowed_roles: ["law_student"] });
+              await Question.create({ subject, track, difficulty: "medium", type: "mcq", question: aiQ.question, options: aiQ.options, correct_option: aiQ.correct_option, explanation: aiQ.explanation, topic: aiQ.topic, passage: chunk.content, source: "ai", source_document_id: docObjectId, used_count: 0, approved: true, validated: true, allowed_roles: ["law_student"] });
               mcqGenerated++;
             } catch (err) { console.error(`[Bank] MCQ generation failed:`, err); mcqFailed++; }
           }));
@@ -223,6 +223,7 @@ export async function populateQuestionBankFromPdf(params: {
             correct_option: aiQ.correct_option,
             explanation: aiQ.explanation,
             topic: aiQ.topic,
+            passage: chunk.content,
             source: "ai",
             source_document_id: docObjectId,
             used_count: 0,
@@ -276,6 +277,7 @@ export async function extractPastQuestionsFromPdf(params: {
 
           await Question.create({
             ...q,
+            passage: chunk.content,
             source: "past",
             year: year ?? undefined,
             source_document_id: docObjectId,

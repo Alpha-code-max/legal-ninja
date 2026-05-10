@@ -117,6 +117,18 @@ export function QuestionCard({ question, questionNumber, total, onAnswer, disabl
         </span>
       </div>
 
+      {/* Passage block */}
+      {question.passage && (
+        <div className="p-4 rounded-lg text-xs leading-relaxed"
+             style={{ background: "color-mix(in srgb, var(--cyber-cyan) 6%, transparent)",
+                      border: "1px solid color-mix(in srgb, var(--cyber-cyan) 20%, transparent)",
+                      color: "var(--text-muted)" }}>
+          <p className="text-[9px] font-black uppercase tracking-widest mb-3"
+             style={{ color: "var(--cyber-cyan)" }}>📄 Read the passage</p>
+          <p className="whitespace-pre-wrap">{question.passage}</p>
+        </div>
+      )}
+
       {/* Question text */}
       <p className="text-lg font-semibold leading-snug" style={{ color: "var(--text-base)" }}>
         {question.question}

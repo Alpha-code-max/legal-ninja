@@ -157,6 +157,7 @@ export interface PendingQuestion {
   model_answer: string | null;
   rubric: string | null;
   topic: string | null;
+  passage: string | null;
   validated: boolean;
   created_at: string;
 }

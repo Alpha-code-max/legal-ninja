@@ -183,6 +183,14 @@ function PendingQuestionsTab({ adminKey }: Props) {
                           style={{ borderColor: "var(--cyber-border)", background: "var(--cyber-bg)", color: "var(--text-base)" }}
                           rows={2}
                         />
+                        <textarea
+                          value={editData.passage || ""}
+                          onChange={(e) => setEditData({ ...editData, passage: e.target.value })}
+                          placeholder="Passage (optional — shown to students above the question)"
+                          className="w-full p-2 text-xs rounded border"
+                          style={{ borderColor: "var(--cyber-border)", background: "var(--cyber-bg)", color: "var(--text-base)" }}
+                          rows={3}
+                        />
                         <div className="flex gap-2">
                           <NeonButton
                             size="sm"
@@ -218,6 +226,12 @@ function PendingQuestionsTab({ adminKey }: Props) {
                               </div>
                             ))}
                           </div>
+                        )}
+                        {q.passage && (
+                          <p className="text-xs mt-2 p-2 rounded whitespace-pre-wrap" style={{ background: "rgba(0,255,255,0.05)", color: "var(--text-muted)", maxHeight: "120px", overflow: "auto" }}>
+                            <span className="text-[8px] font-black block mb-1" style={{ color: "var(--cyber-cyan)" }}>📄 PASSAGE:</span>
+                            {q.passage}
+                          </p>
                         )}
                         {q.explanation && (
                           <p className="text-xs mt-2 p-2 rounded" style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-muted)" }}>

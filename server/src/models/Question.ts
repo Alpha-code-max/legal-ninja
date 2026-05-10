@@ -13,6 +13,7 @@ export interface IQuestion extends Document {
   model_answer?: string;
   rubric?: string;
   topic: string | null;
+  passage?: string | null;
   used_count: number;
   source_document_id: mongoose.Types.ObjectId | null;
   // New fields for proposal
@@ -38,6 +39,7 @@ const QuestionSchema = new Schema<IQuestion>(
     model_answer:   { type: String, default: null },
     rubric:         { type: String, default: null },
     topic:          { type: String, default: null },
+    passage:        { type: String, default: null },
     used_count:          { type: Number, default: 0 },
     source_document_id:  { type: Schema.Types.ObjectId, ref: "PdfDocument", default: null, index: true },
     // Proposal fields
