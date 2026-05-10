@@ -26,7 +26,12 @@ export interface IUser extends Document {
     expires_at: Date;
   }[];
   badges: string[];
-  weak_areas: string[];
+  weak_areas: {
+    subject: string;
+    wrong_count: number;
+    correct_count: number;
+    last_wrong_at: Date;
+  }[];
   recent_answers: boolean[];
   last_demotion_at: Date | null;
   last_login_at: Date;
@@ -69,7 +74,12 @@ const UserSchema = new Schema<IUser>(
       expires_at:  { type: Date, required: true },
     }],
     badges:          { type: [String], default: [] },
-    weak_areas:      { type: [String], default: [] },
+    weak_areas: [{
+      subject:       { type: String, required: true },
+      wrong_count:   { type: Number, default: 0 },
+      correct_count: { type: Number, default: 0 },
+      last_wrong_at: { type: Date, default: Date.now },
+    }],
     recent_answers:  { type: [Boolean], default: [] },
     last_demotion_at: { type: Date, default: null },
     last_login_at:   { type: Date, default: Date.now },

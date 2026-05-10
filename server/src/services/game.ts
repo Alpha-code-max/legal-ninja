@@ -7,6 +7,36 @@ import mongoose from "mongoose";
 import { LEVEL_DYNAMICS, LEVELS, XP_SOURCES } from "./progression";
 import { gradeEssay } from "./ai";
 
+async function updateWeakArea(userId: string, subject: string, correct: boolean) {
+  if (!subject) return;
+
+  const updateOp = correct
+    ? { $inc: { "weak_areas.$.correct_count": 1 } }
+    : {
+        $inc: { "weak_areas.$.wrong_count": 1 },
+        $set: { "weak_areas.$.last_wrong_at": new Date() }
+      };
+
+  const user = await User.findOneAndUpdate(
+    { _id: new mongoose.Types.ObjectId(userId), "weak_areas.subject": subject },
+    updateOp,
+    { new: false }
+  );
+
+  if (!user || !user.weak_areas.find(wa => wa.subject === subject)) {
+    await User.findByIdAndUpdate(userId, {
+      $push: {
+        weak_areas: {
+          subject,
+          wrong_count: correct ? 0 : 1,
+          correct_count: correct ? 1 : 0,
+          last_wrong_at: correct ? new Date() : new Date(),
+        }
+      }
+    });
+  }
+}
+
 export async function submitAnswer(params: {
   sessionId: string;
   userId: string;
@@ -105,8 +135,11 @@ export async function submitAnswer(params: {
       ...(direction === "down" ? { last_demotion_at: new Date() } : {}),
     },
     $max: { longest_streak: newStreak },
-    ...(!correct && !isEssay && subject ? { $addToSet: { weak_areas: subject } } : {}),
   });
+
+  if (!isEssay && subject) {
+    await updateWeakArea(userId, subject, correct);
+  }
 
   // Update quest progress
   await updateQuestProgress(userId, "questions_answered", 1);
@@ -224,24 +257,22 @@ export async function endGameSession(params: {
   const newBadges = await checkAndAwardBadges(params.userId, { grade, streak: session.max_streak });
   updateLeaderboard(params.userId).catch(console.error);
 
-  // Identify weak areas from failed essays
-  const weakAreas: string[] = [];
-  for (const answer of session.answers) {
-    const question = questionMap.get(answer.question_id);
-    if (question?.type === "essay" && !answer.correct && question.subject) {
-      weakAreas.push(question.subject);
-    }
-  }
-
   // Update user stats for essays (MCQ stats were already updated in submitAnswer)
-  if (essayXP > 0 || essayCorrectCount > 0 || weakAreas.length > 0) {
-    await User.findByIdAndUpdate(params.userId, { 
-      $inc: { 
+  if (essayXP > 0 || essayCorrectCount > 0) {
+    await User.findByIdAndUpdate(params.userId, {
+      $inc: {
         xp: essayXP,
         total_correct_answers: essayCorrectCount
-      },
-      ...(weakAreas.length > 0 ? { $addToSet: { weak_areas: { $each: weakAreas } } } : {})
+      }
     });
+  }
+
+  // Update weak areas for failed essays
+  for (const answer of session.answers) {
+    const question = questionMap.get(answer.question_id);
+    if (question?.type === "essay" && question.subject) {
+      await updateWeakArea(params.userId, question.subject, answer.correct ?? false);
+    }
   }
 
   // Update battles_completed quest progress

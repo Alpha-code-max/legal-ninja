@@ -23,6 +23,22 @@ function isGeneralMode(subject: string): boolean {
   return TRACK_IDS.has(subject) || subject === "mixed";
 }
 
+function rankWeakSubjects(weakAreas: { subject: string; wrong_count: number; correct_count: number; last_wrong_at: Date }[]): string[] {
+  const now = new Date();
+  const scored = weakAreas
+    .map((wa) => {
+      const total = wa.wrong_count + wa.correct_count;
+      const wrongRatio = total > 0 ? wa.wrong_count / total : 0;
+      const hoursSinceWrong = (now.getTime() - new Date(wa.last_wrong_at).getTime()) / (1000 * 60 * 60);
+      const recencyBoost = hoursSinceWrong < 48 ? 0.5 : 0;
+      const score = wrongRatio * (1 + recencyBoost);
+      return { subject: wa.subject, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  return scored.map((s) => s.subject);
+}
+
 async function getSeenIds(userId: string): Promise<mongoose.Types.ObjectId[]> {
   const sessions = await GameSession.find(
     { user_id: new mongoose.Types.ObjectId(userId) },
@@ -94,6 +110,36 @@ export async function getOrGenerateQuestions(params: {
 
   // approved: { $ne: false } matches true AND undefined (backwards-compatible)
   const approvedClause = { approved: { $ne: false } };
+
+  // ── WEAK AREA FOCUS: Prioritize subjects user struggles with ─────────────
+  if (mode === "weak_area_focus" && userId) {
+    const user = await User.findById(userId).select("weak_areas").lean();
+    if (user && (user as any).weak_areas && (user as any).weak_areas.length > 0) {
+      const rankedSubjects = rankWeakSubjects((user as any).weak_areas);
+      const topWeakSubjects = rankedSubjects.slice(0, 3);
+
+      for (const weakSubject of topWeakSubjects) {
+        const results = await fetchQuestions({
+          ...params,
+          subject: weakSubject,
+          count,
+          type: typeFilter,
+          seenFilter,
+          allowedRolesClause,
+          sourceFilter,
+          yearFilter,
+          approvedClause
+        });
+
+        if (results.length >= Math.ceil(count / 2)) {
+          await incrementUsedCount(results);
+          return results.slice(0, count);
+        }
+      }
+    }
+
+    // Fallback to normal mode if no weak areas or insufficient questions
+  }
 
   // ── EXAM SIMULATION: Essay-only questions from the specific subject ─────────
   if (mode === "exam_simulation") {
