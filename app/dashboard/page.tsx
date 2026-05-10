@@ -363,7 +363,7 @@ function DashboardContent() {
         <motion.div variants={itemVars} className="space-y-3">
           <h3 className="text-[10px] font-black uppercase tracking-[0.3em]"
               style={{ color: "var(--text-muted)" }}>Battle Modes</h3>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 xs:grid-cols-3 gap-3">
             {QUICK_ACTIONS.map((action) => (
               <motion.button
                 key={action.id}

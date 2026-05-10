@@ -65,7 +65,7 @@ export function EssayQuestionCard({ question, questionNumber, total, onAnswer, d
           disabled={disabled}
           maxLength={maxChars}
           placeholder="Type your legal analysis here... cite relevant cases or statutes if applicable."
-          className="w-full h-64 bg-transparent border border-cyber-border rounded-xl p-4 text-sm focus:outline-none focus:border-cyber-purple transition-all resize-none"
+          className="w-full min-h-[140px] max-h-[40dvh] bg-transparent border border-cyber-border rounded-xl p-4 text-sm focus:outline-none focus:border-cyber-purple transition-all resize-none"
           style={{ color: "var(--text-base)" }}
         />
         <div className="flex justify-between items-center text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>

@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        xs: "375px",
+      },
       fontFamily: {
         display:  ['"Cabinet Grotesk"', "sans-serif"], // Playful headings
         body:     ['"Bricolage Grotesque"', "sans-serif"], // Smooth body text

@@ -127,7 +127,7 @@ export function QuestionCard({ question, questionNumber, total, onAnswer, disabl
         {OPTION_KEYS.map((key) => (
           <motion.button
             key={key}
-            whileHover={!selected ? { scale: 1.015, x: 3 } : {}}
+            whileHover={!selected ? { scale: 1.015 } : {}}
             whileTap={!selected ? { scale: 0.99 } : {}}
             onClick={() => handleSelect(key)}
             disabled={!!selected || disabled}
