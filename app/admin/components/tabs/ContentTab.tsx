@@ -53,7 +53,11 @@ function PendingQuestionsTab({ adminKey }: Props) {
 
   const handleApprove = async (id: string) => {
     try {
-      await adminApi.editQuestion(adminKey, id, { approved: true });
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+      await fetch(`${API_BASE}/admin/questions/${id}/approve`, {
+        method: "PATCH",
+        headers: { "x-admin-key": adminKey },
+      });
       setQuestions(questions.filter((q) => q.id !== id));
     } catch (err) {
       console.error("Failed to approve:", err);
