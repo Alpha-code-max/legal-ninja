@@ -5,13 +5,17 @@ import { NeonButton } from "@/components/ui/NeonButton";
 interface Props {
   score: number;
   correctAnswer: string;
+  userAnswer: string;
   feedback?: string;
   countdown: number | null;
+  isCorrect?: boolean;
   onSkip: () => void;
 }
 
-export function EssayCorrectionCard({ score, correctAnswer, feedback, countdown, onSkip }: Props) {
-  const progressPercent = countdown !== null ? (countdown / 20) * 100 : 0;
+export function EssayCorrectionCard({ score, correctAnswer, userAnswer, feedback, countdown, isCorrect, onSkip }: Props) {
+  const progressPercent = countdown !== null ? (countdown / 30) * 100 : 0;
+  const statusColor = isCorrect ? "var(--cyber-green)" : (score >= 50 ? "var(--cyber-green)" : "var(--cyber-red)");
+  const statusLabel = isCorrect ? "✅ EXCELLENT" : (score >= 50 ? "PASS" : "NEEDS WORK");
 
   return (
     <motion.div
@@ -24,15 +28,31 @@ export function EssayCorrectionCard({ score, correctAnswer, feedback, countdown,
       <div className="flex items-center justify-between">
         <span className="text-xs font-black uppercase tracking-widest px-2 py-1 rounded-full"
               style={{
-                color: score >= 50 ? "var(--cyber-green)" : "var(--cyber-red)",
-                background: `color-mix(in srgb, ${score >= 50 ? "var(--cyber-green)" : "var(--cyber-red)"} 12%, transparent)`,
-                border: `1px solid color-mix(in srgb, ${score >= 50 ? "var(--cyber-green)" : "var(--cyber-red)"} 25%, transparent)`,
+                color: statusColor,
+                background: `color-mix(in srgb, ${statusColor} 12%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${statusColor} 25%, transparent)`,
               }}>
-          CORRECTION
+          {statusLabel}
         </span>
-        <span className="text-2xl font-black font-mono" style={{ color: score >= 50 ? "var(--cyber-green)" : "var(--cyber-red)" }}>
+        <span className="text-2xl font-black font-mono" style={{ color: statusColor }}>
           {Math.round(score)}%
         </span>
+      </div>
+
+      {/* Your Response Section */}
+      <div className="space-y-3">
+        <label className="text-[10px] uppercase tracking-widest font-black" style={{ color: "var(--text-muted)" }}>
+          📝 Your Response
+        </label>
+        <div className="rounded-xl p-4 border"
+             style={{
+               background: "color-mix(in srgb, var(--cyber-cyan) 6%, transparent)",
+               borderColor: "var(--cyber-cyan)",
+             }}>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-base)" }}>
+            {userAnswer || "(Empty response)"}
+          </p>
+        </div>
       </div>
 
       {/* Model Answer Section */}

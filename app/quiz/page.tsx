@@ -127,6 +127,7 @@ function QuizContent() {
     weaknesses: string[];
     xpGained: number;
   } | null>(null);
+  const [essayUserAnswer, setEssayUserAnswer] = useState<string | null>(null);
   const [askedQuestionIds, setAskedQuestionIds] = useState<string[]>([]);
 
   const game = useGameStore();
@@ -366,6 +367,9 @@ function QuizContent() {
     }
 
     if (isEssay) {
+      // Store user's answer
+      setEssayUserAnswer(selected);
+
       // Essay: grade synchronously if not offline/guest
       if (sessionId && !isOffline && !isGuest) {
         try {
@@ -386,6 +390,7 @@ function QuizContent() {
             if (nextIndex >= selectedCount) {
               nextActionRef.current = async () => {
                 setEssayResult(null);
+                setEssayUserAnswer(null);
                 setIsRevealing(false);
                 await finishSession();
               };
@@ -399,6 +404,7 @@ function QuizContent() {
                   setAskedQuestionIds([...askedQuestionIds, q.id]);
                 }
                 setEssayResult(null);
+                setEssayUserAnswer(null);
                 setIsRevealing(false);
               };
             }
@@ -406,26 +412,31 @@ function QuizContent() {
             return;
           }
 
-          // Correct essay: show XP popup, then continue
-          setXpPopup({ xp: result.xpGained, correct: true });
-          setTimeout(() => setXpPopup(null), 1400);
-
-          // Continue to next question
+          // Correct essay: show result card with answer, XP, then continue
+          setEssayResult({ ...result, correct: true });
+          setCountdown(30);
           const nextIndex = questionIndex + 1;
           if (nextIndex >= selectedCount) {
-            setIsRevealing(false);
-            await finishSession();
-            return;
+            nextActionRef.current = async () => {
+              setEssayResult(null);
+              setEssayUserAnswer(null);
+              setIsRevealing(false);
+              await finishSession();
+            };
+          } else {
+            nextActionRef.current = async () => {
+              const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex, askedQuestionIds);
+              if (q) {
+                setIsOffline(fromOffline);
+                setCurrentQuestion(q);
+                setQuestionIndex(nextIndex);
+                setAskedQuestionIds([...askedQuestionIds, q.id]);
+              }
+              setEssayResult(null);
+              setEssayUserAnswer(null);
+              setIsRevealing(false);
+            };
           }
-
-          const { question: q, fromOffline } = await fetchNextQuestion(selectedSubject || track, selectedDifficulty, offlineQueue, nextIndex, askedQuestionIds);
-          if (q) {
-            setIsOffline(fromOffline);
-            setCurrentQuestion(q);
-            setQuestionIndex(nextIndex);
-            setAskedQuestionIds([...askedQuestionIds, q.id]);
-          }
-          setIsRevealing(false);
           return;
         } catch (err) {
           console.error("Essay grading error:", err);
@@ -837,13 +848,15 @@ function QuizContent() {
         </AnimatePresence>
 
         <AnimatePresence mode="wait">
-          {essayResult && !essayResult.correct ? (
+          {essayResult ? (
             <EssayCorrectionCard
               key={`correction-${currentQuestion.id}`}
               score={essayResult.score}
               correctAnswer={essayResult.correct_answer ?? ""}
+              userAnswer={essayUserAnswer ?? ""}
               feedback={essayResult.feedback}
               countdown={countdown}
+              isCorrect={essayResult.correct}
               onSkip={skipToNext}
             />
           ) : isEssay ? (
