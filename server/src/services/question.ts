@@ -111,6 +111,9 @@ export async function getOrGenerateQuestions(params: {
   // approved: { $ne: false } matches true AND undefined (backwards-compatible)
   const approvedClause = { approved: { $ne: false } };
 
+  // Convert "mixed" to undefined so fetchQuestions doesn't filter by type
+  const typeFilter = type && type !== "mixed" ? type : undefined;
+
   // ── WEAK AREA FOCUS: Prioritize subjects user struggles with ─────────────
   if (mode === "weak_area_focus" && userId) {
     const user = await User.findById(userId).select("weak_areas").lean();
@@ -157,9 +160,6 @@ export async function getOrGenerateQuestions(params: {
     await incrementUsedCount(results);
     return results;
   }
-
-  // Convert "mixed" to undefined so fetchQuestions doesn't filter by type
-  const typeFilter = type && type !== "mixed" ? type : undefined;
 
   const results = await fetchQuestions({
     ...params,
