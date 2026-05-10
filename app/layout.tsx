@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BottomNav } from "@/components/ui/BottomNav";
+import { AnalyticsProvider } from "@/components/providers/AnalyticsProvider";
 
 export const metadata: Metadata = {
   title: "Legal Ninja — Gamified Law Study",
@@ -36,11 +37,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="absolute inset-0 [background:radial-gradient(ellipse_at_70%_80%,var(--orb-b)_0%,transparent_60%)]" />
         </div>
 
-        <main className="relative z-10 min-h-screen">
-          {children}
-        </main>
+        <AnalyticsProvider>
+          <main className="relative z-10 min-h-screen">
+            {children}
+          </main>
 
-        <BottomNav />
+          <BottomNav />
+        </AnalyticsProvider>
       </body>
     </html>
   );

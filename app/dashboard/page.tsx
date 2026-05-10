@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Suspense, useState, useEffect } from "react";
 import { useUserStore, getTotalBalance } from "@/lib/store/user-store";
 import { useGameStore } from "@/lib/store/game-store";
+import { analytics } from "@/lib/analytics";
 import { StudentOnboarding } from "@/components/onboarding/StudentOnboarding";
 import { XPBar } from "@/components/ui/XPBar";
 import { LevelBadge } from "@/components/ui/LevelBadge";
@@ -254,6 +255,10 @@ function DashboardContent() {
   }, [trackData.subjects]);
 
   const handleAction = (id: string) => {
+    analytics.track("game_mode_selected", {
+      mode: id,
+      user_level: user.level,
+    });
     if (id === "store") { router.push("/store"); return; }
     if (id === "duel" || id === "battle_royale") {
       router.push(`/lobby?mode=${id}&track=${track}`); return;

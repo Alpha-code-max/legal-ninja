@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore, type Question } from "@/lib/store/game-store";
 import { useUserStore } from "@/lib/store/user-store";
 import { useGuestStore, GUEST_DAILY_LIMIT } from "@/lib/store/guest-store";
+import { analytics } from "@/lib/analytics";
 import { QuestionCard } from "@/components/game/QuestionCard";
 import { EssayQuestionCard } from "@/components/game/EssayQuestionCard";
 import { EssayCorrectionCard } from "@/components/game/EssayCorrectionCard";
@@ -146,6 +147,18 @@ function QuizContent() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Track quiz_started when quiz actually starts
+  useEffect(() => {
+    if (phase === "active") {
+      analytics.track("quiz_started", {
+        mode,
+        subject: selectedSubject || track,
+        difficulty: selectedDifficulty,
+        count: selectedCount,
+      });
+    }
+  }, [phase, mode, selectedSubject, track, selectedDifficulty, selectedCount]);
 
   // Fetch availability for specific subject
   useEffect(() => {
@@ -339,6 +352,17 @@ function QuizContent() {
     if (!isGuest) {
       user.recordAnswer(correct);
       user.addXP(xp_gained);
+    }
+
+    // Track answer_submitted with 1-in-3 sampling
+    if (Math.random() < 0.33) {
+      analytics.track("answer_submitted", {
+        correct,
+        xp_gained,
+        mode,
+        subject: selectedSubject || track,
+        type: isEssay ? "essay" : "mcq",
+      });
     }
 
     if (isEssay) {

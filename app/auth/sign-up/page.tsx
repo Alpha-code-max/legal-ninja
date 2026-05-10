@@ -6,6 +6,7 @@ import Image from "next/image";
 import { api, setToken } from "@/lib/api/client";
 import { useUserStore } from "@/lib/store/user-store";
 import { useGuestStore } from "@/lib/store/guest-store";
+import { analytics } from "@/lib/analytics";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +46,7 @@ export default function SignUpPage() {
       });
       setToken(token);
       const u = user as Record<string, unknown>;
-      setUser({
+      const userObj = {
         uid:                      String(u._id ?? u.uid ?? ""),
         username:                 String(u.username ?? ""),
         avatar_url:               String(u.avatar_url ?? ""),
@@ -67,8 +68,14 @@ export default function SignUpPage() {
         weak_areas:               (u.weak_areas as string[]) ?? [],
         referral_count:           Number(u.referral_count ?? 0),
         recent_answers:           (u.recent_answers as boolean[]) ?? [],
-      });
+      };
+      setUser(userObj);
       setGuest(false);
+      analytics.track("sign_up", {
+        track,
+        role,
+        has_referral: referral.trim().length > 0,
+      });
       setSuccess(true);
       // Redirect to verify-email notice; they can still use the app but email verification is pending
       setTimeout(() => router.push("/auth/verify-email?pending=true&email=" + encodeURIComponent(email)), 1500);

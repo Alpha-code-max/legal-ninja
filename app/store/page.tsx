@@ -5,6 +5,7 @@ import { api } from "@/lib/api/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserStore, getTotalBalance } from "@/lib/store/user-store";
 import { MONETIZATION, type Bundle, type Pass } from "@/lib/config/monetization";
+import { analytics } from "@/lib/analytics";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { formatNGN } from "@/lib/utils";
@@ -38,6 +39,7 @@ export default function StorePage() {
   const [tab, setTab]           = useState<Tab>("bundles");
   const [purchased, setPurchased] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [lastPurchasePrice, setLastPurchasePrice] = useState<number | null>(null);
 
   // Check for ?payment=success query param after Paystack redirect
   useEffect(() => {
@@ -70,6 +72,11 @@ export default function StorePage() {
                   subject_id: p.subject_id,
                 })),
               });
+              // Track purchase completed
+              analytics.track("purchase_completed", {
+                reference,
+                price_ngn: lastPurchasePrice ?? 0,
+              });
               setPurchased("✅ Payment successful! Questions added.");
               setTimeout(() => setPurchased(null), 5000);
             });
@@ -90,6 +97,11 @@ export default function StorePage() {
     if (!user.uid) { router.push("/auth/sign-in"); return; }
     setProcessing(`bundle-${index}`);
     try {
+      setLastPurchasePrice(bundle.price_ngn);
+      analytics.track("purchase_initiated", {
+        item: `bundle_${index}`,
+        price_ngn: bundle.price_ngn,
+      });
       const result = await api.buyBundle(index);
       window.location.href = result.authorization_url;
     } catch {
