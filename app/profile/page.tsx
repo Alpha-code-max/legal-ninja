@@ -316,6 +316,38 @@ export default function ProfilePage() {
         )}
 
         {/* Referral stats */}
+        {/* Referral Code */}
+        {user.referral_code && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.40 }}
+            className="cyber-card p-4 space-y-2"
+          >
+            <p className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Your Referral Code</p>
+            <div className="flex gap-2 items-center">
+              <div className="flex-1 px-3 py-2 rounded-lg border font-mono text-xs font-black"
+                   style={{ borderColor: "var(--cyber-border)", background: "var(--cyber-bg)", color: "var(--cyber-cyan)" }}>
+                {user.referral_code}
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(user.referral_code || "");
+                  alert("Code copied!");
+                }}
+                className="px-2.5 py-2 rounded-lg border font-black text-[10px] transition-all"
+                style={{
+                  borderColor: "var(--cyber-border)",
+                  color: "var(--cyber-cyan)",
+                  background: "color-mix(in srgb, var(--cyber-cyan) 10%, transparent)"
+                }}
+              >
+                Copy
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

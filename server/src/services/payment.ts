@@ -269,7 +269,18 @@ async function alertPaymentFailure(params: {
   code: string;
   message: string;
 }): Promise<void> {
-  // TODO: Send alert to admin/ops team
+  const alert = {
+    timestamp: new Date().toISOString(),
+    severity: "ERROR",
+    service: "payment",
+    reference: params.reference,
+    code: params.code,
+    message: params.message,
+    action: "MANUAL_REVIEW_REQUIRED",
+  };
+
+  console.error("[PAYMENT_FAILURE]", JSON.stringify(alert));
+
+  // TODO: Send to monitoring service (Sentry, PagerDuty, Slack webhook, etc.)
   // TODO: Create incident for manual recovery if needed
-  console.warn(`[Payment:Alert] Failed payment needs manual review: ${params.reference} [${params.code}]`);
 }
