@@ -75,9 +75,13 @@ function PendingQuestionsTab({ adminKey }: Props) {
   };
 
   const handleBatchApprove = async () => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
     for (const id of selected) {
       try {
-        await adminApi.editQuestion(adminKey, id, { approved: true });
+        await fetch(`${API_BASE}/admin/questions/${id}/approve`, {
+          method: "PATCH",
+          headers: { "x-admin-key": adminKey },
+        });
       } catch (err) {
         console.error(`Failed to approve ${id}:`, err);
       }
@@ -308,12 +312,13 @@ export function ContentTab({ adminKey }: Props) {
   const [genDifficulty, setGenDifficulty] = useState("medium");
   const [genType, setGenType] = useState("mixed");
   const [genResult, setGenResult] = useState<any>(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const reload = async () => {
     setLoading(true);
     setError(null);
     try {
-      let b, pdfList;
+      let b, pdfList, pending;
 
       try {
         b = await adminApi.getBankStats(adminKey);
@@ -327,8 +332,15 @@ export function ContentTab({ adminKey }: Props) {
         throw new Error(`PDFs: ${err instanceof Error ? err.message : String(err)}`);
       }
 
+      try {
+        pending = await adminApi.getPendingQuestions(adminKey, 1, 1);
+      } catch (err) {
+        throw new Error(`Pending: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
       setBanks(b || []);
       setPdfs(pdfList || []);
+      setPendingCount(pending?.total ?? 0);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("Failed to load content:", msg);
@@ -438,7 +450,7 @@ export function ContentTab({ adminKey }: Props) {
       <div className="flex gap-2 border-b overflow-x-auto" style={{ borderColor: "var(--cyber-border)" }}>
         {[
           { id: "banks", label: "Question Banks" },
-          { id: "pending", label: `Pending (${pending.length})` },
+          { id: "pending", label: `Pending (${pendingCount})` },
           { id: "pdfs", label: `PDFs (${pdfs.length})` },
           { id: "generate", label: "Generate" },
         ].map((tab) => (
