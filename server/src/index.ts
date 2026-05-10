@@ -4,6 +4,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
+import * as Sentry from "@sentry/node";
 
 import authRouter from "./routes/auth";
 import questionsRouter from "./routes/questions";
@@ -20,6 +21,14 @@ import { connectDB } from "./db/connection";
 
 const app = express();
 const httpServer = http.createServer(app);
+
+// --- Sentry error tracking ---
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 0.1,
+  environment: process.env.NODE_ENV,
+  enabled: !!process.env.SENTRY_DSN,
+});
 
 // --- Security ---
 app.use(helmet());
@@ -85,6 +94,9 @@ app.use("/api/admin",                        adminRouter);
 
 // --- 404 ---
 app.use((_req, res) => res.status(404).json({ error: "Route not found" }));
+
+// --- Sentry error handler (must be before other error handlers) ---
+Sentry.setupExpressErrorHandler(app);
 
 // --- Global error handler ---
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
