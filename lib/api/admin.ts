@@ -144,6 +144,30 @@ export interface RevenueAnalytics {
   };
 }
 
+export interface PendingQuestion {
+  id: string;
+  type: "mcq" | "essay";
+  subject: string;
+  difficulty: string;
+  track: string;
+  question: string;
+  options: { A: string; B: string; C: string; D: string };
+  correct_option: "A" | "B" | "C" | "D";
+  explanation: string | null;
+  model_answer: string | null;
+  rubric: string | null;
+  topic: string | null;
+  validated: boolean;
+  created_at: string;
+}
+
+export interface PendingQuestionsResponse {
+  questions: PendingQuestion[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
 async function adminRequest<T>(path: string, options: RequestInit = {}, key: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -328,8 +352,22 @@ export const adminApi = {
   getSubjectAnalytics: (key: string) =>
     adminRequest<SubjectAnalytics[]>("/admin/analytics/subjects", {}, key),
 
-  getPendingQuestions: (key: string) =>
-    adminRequest<any[]>("/admin/questions/pending", {}, key),
+  getPendingQuestions: (key: string, page: number = 1, limit: number = 10) =>
+    adminRequest<PendingQuestionsResponse>(`/admin/questions/pending?page=${page}&limit=${limit}`, {}, key),
+
+  deleteQuestion: (key: string, id: string) =>
+    adminRequest<{ deleted: boolean; id: string }>(
+      `/admin/questions/${id}`,
+      { method: "DELETE" },
+      key
+    ),
+
+  editQuestion: (key: string, id: string, data: Partial<Omit<PendingQuestion, "id" | "created_at">>) =>
+    adminRequest<{ updated: boolean; id: string }>(
+      `/admin/questions/${id}`,
+      { method: "PATCH", body: JSON.stringify(data) },
+      key
+    ),
 
   getUserGrowth: (key: string, days: number = 30) =>
     adminRequest<GrowthData[]>(`/admin/analytics/users/growth?days=${days}`, {}, key),

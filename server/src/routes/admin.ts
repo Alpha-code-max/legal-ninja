@@ -648,7 +648,7 @@ router.patch("/questions/:id/approve", requireAdmin, async (req: Request, res) =
   try {
     const q = await Question.findByIdAndUpdate(
       req.params.id,
-      { $set: { approved: true } },
+      { $set: { approved: true, validated: true } },
       { new: true }
     );
     if (!q) { res.status(404).json({ error: "Question not found" }); return; }
@@ -661,27 +661,72 @@ router.patch("/questions/:id/approve", requireAdmin, async (req: Request, res) =
 
 router.patch("/questions/:id/reject", requireAdmin, async (req: Request, res) => {
   try {
-    const q = await Question.findByIdAndUpdate(
-      req.params.id,
-      { $set: { approved: false } },
-      { new: true }
-    );
-    if (!q) { res.status(404).json({ error: "Question not found" }); return; }
-    res.json({ rejected: true, id: String(q._id) });
+    await Question.findByIdAndDelete(req.params.id);
+    res.json({ rejected: true, id: req.params.id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to reject question" });
   }
 });
 
-// ─── List unapproved AI questions for review ──────────────────────────────────
-router.get("/questions/pending", requireAdmin, async (_req: Request, res) => {
+router.delete("/questions/:id", requireAdmin, async (req: Request, res) => {
   try {
-    const questions = await Question.find({ source: "ai", approved: false })
-      .sort({ created_at: -1 })
-      .limit(50)
-      .lean();
-    res.json(questions.map((q) => ({ ...q, id: String(q._id) })));
+    await Question.findByIdAndDelete(req.params.id);
+    res.json({ deleted: true, id: req.params.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete question" });
+  }
+});
+
+router.patch("/questions/:id", requireAdmin, async (req: Request, res) => {
+  try {
+    const { question, options, correct_option, explanation, model_answer, rubric, topic } = req.body;
+    const updates: any = {};
+
+    if (question !== undefined) updates.question = String(question).slice(0, 1000);
+    if (options !== undefined) updates.options = options;
+    if (correct_option !== undefined) updates.correct_option = correct_option;
+    if (explanation !== undefined) updates.explanation = String(explanation).slice(0, 800);
+    if (model_answer !== undefined) updates.model_answer = String(model_answer).slice(0, 2000);
+    if (rubric !== undefined) updates.rubric = String(rubric).slice(0, 1000);
+    if (topic !== undefined) updates.topic = String(topic).slice(0, 100);
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "No fields to update" });
+      return;
+    }
+
+    const q = await Question.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true });
+    if (!q) { res.status(404).json({ error: "Question not found" }); return; }
+    res.json({ updated: true, id: String(q._id) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update question" });
+  }
+});
+
+// ─── List unapproved AI questions for review ──────────────────────────────────
+router.get("/questions/pending", requireAdmin, async (req: Request, res) => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Number(req.query.limit) || 10);
+
+    const [questions, total] = await Promise.all([
+      Question.find({ source: "ai", approved: false })
+        .sort({ created_at: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Question.countDocuments({ source: "ai", approved: false }),
+    ]);
+
+    res.json({
+      questions: questions.map((q) => ({ ...q, id: String(q._id) })),
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch pending questions" });
