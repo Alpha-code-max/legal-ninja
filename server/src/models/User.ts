@@ -25,6 +25,8 @@ export interface IUser extends Document {
     subject_id?: string;
     expires_at: Date;
   }[];
+  subscription_plan?: string;
+  subscription_expires?: Date;
   badges: string[];
   weak_areas: {
     subject: string;
@@ -73,6 +75,8 @@ const UserSchema = new Schema<IUser>(
       subject_id:  { type: String },
       expires_at:  { type: Date, required: true },
     }],
+    subscription_plan:   { type: String, default: null },
+    subscription_expires: { type: Date, default: null },
     badges:          { type: [String], default: [] },
     weak_areas: [{
       subject:       { type: String, required: true },

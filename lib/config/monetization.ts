@@ -1,30 +1,34 @@
 export const MONETIZATION = {
-  model: "pay_per_question" as const,
-  free_questions: 100,
+  model: "subscription" as const,
+  free_tier_questions_monthly: 100,
   pricing: {
-    per_question_ngn: 10,
-    bundles: [
-      { questions: 50,  price_ngn: 500,  savings: "0%",  popular: true  },
-      { questions: 100, price_ngn: 1000, savings: "0%",  popular: false },
-      { questions: 200, price_ngn: 1900, savings: "5%",  popular: false },
-      { questions: 500, price_ngn: 4500, savings: "10%", popular: false },
-    ],
-    passes: [
+    subscriptions: [
       {
-        id: "7_day_unlimited",
-        name: "7-Day Unlimited",
-        price_ngn: 700,
-        duration_days: 7,
-        subject_specific: false,
-        description: "Perfect for exam week",
+        id: "free",
+        name: "Free",
+        price_ngn: 0,
+        billing_period_days: 30,
+        questions_per_month: 100,
+        features: ["100 questions/month", "Basic support"],
+        popular: false,
       },
       {
-        id: "subject_mastery",
-        name: "Subject Mastery Pack",
-        price_ngn: 800,
-        duration_days: 30,
-        subject_specific: true,
-        description: "Unlimited questions in one subject",
+        id: "pro",
+        name: "Pro",
+        price_ngn: 2999,
+        billing_period_days: 30,
+        questions_per_month: -1, // unlimited
+        features: ["Unlimited questions", "All subjects", "Priority support", "Ad-free experience"],
+        popular: true,
+      },
+      {
+        id: "elite",
+        name: "Elite",
+        price_ngn: 4999,
+        billing_period_days: 30,
+        questions_per_month: -1, // unlimited
+        features: ["Unlimited questions", "All subjects", "VIP support", "Ad-free experience", "Monthly insights report"],
+        popular: false,
       },
     ],
   },
@@ -36,9 +40,8 @@ export const MONETIZATION = {
     spaced_repetition_review: 5,
   },
   rules: {
-    first_free: 100,
+    first_free_days: 30,
     low_balance_warning_threshold: 20,
-    deduction_order: ["earned", "paid", "free"] as const,
   },
   payment_gateways: {
     primary: ["Paystack", "Flutterwave"] as const,
@@ -47,5 +50,4 @@ export const MONETIZATION = {
   },
 } as const;
 
-export type Bundle = (typeof MONETIZATION.pricing.bundles)[number];
-export type Pass = (typeof MONETIZATION.pricing.passes)[number];
+export type Subscription = (typeof MONETIZATION.pricing.subscriptions)[number];

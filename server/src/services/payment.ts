@@ -14,7 +14,7 @@ export interface WebhookEvent {
   data: {
     reference: string;
     status: string;
-    metadata?: { user_id: string; questions_to_add: number; pass_type?: string };
+    metadata?: { user_id: string; questions_to_add: number; pass_type?: string; subscription_plan?: string };
     amount?: number;
     customer?: { email: string };
   };
@@ -118,9 +118,9 @@ export async function processPaystackWebhook(event: WebhookEvent): Promise<void>
       );
     }
 
-    const { user_id, questions_to_add = 0, pass_type } = metadata;
+    const { user_id, questions_to_add = 0, pass_type, subscription_plan } = metadata;
 
-    console.log(`[Payment:Webhook] Data: user=${user_id}, amount=${amount}kobo, questions=${questions_to_add}, pass=${pass_type || "none"}`);
+    console.log(`[Payment:Webhook] Data: user=${user_id}, amount=${amount}kobo, questions=${questions_to_add}, pass=${pass_type || "none"}, subscription=${subscription_plan || "none"}`);
 
     // ===== STEP 2: Idempotency check =====
     const existing = await Transaction.findOne({ reference });
@@ -188,6 +188,19 @@ export async function processPaystackWebhook(event: WebhookEvent): Promise<void>
         $push: { active_passes: { pass_type, pass_name: pass_type.replace(/_/g, " "), expires_at } },
       });
       console.log(`[Payment:Webhook] ✓ Pass activated, expires: ${expires_at.toISOString()}`);
+    }
+
+    // ===== STEP 6.5: Activate subscription =====
+    if (subscription_plan) {
+      console.log(`[Payment:Webhook] Activating subscription: ${subscription_plan}...`);
+      const subscription_expires = new Date(Date.now() + 30 * 86400000);
+      await User.findByIdAndUpdate(user_id, {
+        $set: {
+          subscription_plan,
+          subscription_expires,
+        },
+      });
+      console.log(`[Payment:Webhook] ✓ Subscription activated, expires: ${subscription_expires.toISOString()}`);
     }
 
     // ===== STEP 7: Mark transaction as success =====

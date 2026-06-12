@@ -7,6 +7,7 @@ export interface ITransaction extends Document {
   amount_ngn: number;
   questions_added: number;
   pass_activated: string | null;
+  subscription_plan: string | null;
   bonus_xp: number;
   status: "pending" | "success" | "failed";
   gateway_response: unknown;
@@ -25,6 +26,7 @@ const TransactionSchema = new Schema<ITransaction>(
     amount_ngn:       { type: Number, required: true },
     questions_added:  { type: Number, default: 0 },
     pass_activated:   { type: String, default: null },
+    subscription_plan: { type: String, default: null },
     bonus_xp:         { type: Number, default: 0 },
     status:           { type: String, enum: ["pending", "success", "failed"], default: "pending", index: true },
     gateway_response: { type: Schema.Types.Mixed },

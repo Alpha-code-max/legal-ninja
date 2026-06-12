@@ -27,6 +27,12 @@ async function request<T>(
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const data = await res.json();
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith("/auth/")) {
+      clearToken();
+      if (typeof window !== "undefined" && window.location.pathname !== "/auth/sign-in") {
+        window.location.href = "/auth/sign-in";
+      }
+    }
     // Format validation errors for better UX
     if (data.details?.fieldErrors) {
       const fields = data.details.fieldErrors as Record<string, string[]>;
@@ -67,7 +73,7 @@ export const api = {
     total_questions_answered: number; total_correct_answers: number;
     free_questions_remaining: number; paid_questions_balance: number; earned_questions_balance: number;
     active_passes: { pass_type: string; pass_name: string; subject_id?: string; expires_at: string }[];
-    badges: string[]; weak_areas: string[]; referral_count: number; referral_code: string;
+    badges: string[]; weak_areas: { subject: string; wrong_count: number; correct_count: number; last_wrong_at: string; _id?: string }[]; referral_count: number; referral_code: string;
     daily_goal: { progress: number; target: number; completed: boolean };
   }>("/users/me"),
   updateMe: (body: { username?: string; avatar_url?: string; country?: string; track?: string; role?: string; law_school?: string; university?: string }) =>
@@ -141,6 +147,11 @@ export const api = {
     request<{ authorization_url: string; reference: string }>("/store/buy/pass", {
       method: "POST",
       body: JSON.stringify({ pass_id, subject_id }),
+    }),
+  subscribeToplan: (plan_id: string) =>
+    request<{ authorization_url: string; reference: string }>("/store/subscribe", {
+      method: "POST",
+      body: JSON.stringify({ plan_id }),
     }),
   getTransactions: () => request<unknown[]>("/store/transactions"),
 

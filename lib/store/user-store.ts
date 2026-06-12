@@ -2,6 +2,14 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { getLevelForXP, getNextLevel, LEVEL_DYNAMICS } from "@/lib/config/progression";
 
+export interface WeakArea {
+  subject: string;
+  wrong_count: number;
+  correct_count: number;
+  last_wrong_at: string;
+  _id?: string;
+}
+
 export interface UserState {
   uid: string;
   username: string;
@@ -22,11 +30,13 @@ export interface UserState {
   paid_questions_balance: number;
   earned_questions_balance: number;
   active_passes: ActivePass[];
-  weak_areas: string[];
+  weak_areas: WeakArea[];
   last_demotion_timestamp: number | null;
   referral_count: number;
   referral_code: string;
   recent_answers: boolean[];
+  subscription_plan?: string;
+  subscription_expires?: number;
 }
 
 export interface ActivePass {

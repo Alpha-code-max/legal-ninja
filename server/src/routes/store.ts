@@ -31,6 +31,16 @@ const PASSES: Record<string, { price_ngn: number; name: string; days: number }> 
   "subject_mastery": { price_ngn: 800,  name: "Subject Mastery Pack", days: 30 },
 };
 
+const SUBSCRIPTIONS: Record<string, { price_ngn: number; name: string; billing_period_days: number }> = {
+  "free": { price_ngn: 0, name: "Free", billing_period_days: 30 },
+  "pro": { price_ngn: 2999, name: "Pro", billing_period_days: 30 },
+  "elite": { price_ngn: 4999, name: "Elite", billing_period_days: 30 },
+};
+
+const SubscriptionSchema = z.object({
+  plan_id: z.enum(["free", "pro", "elite"]),
+});
+
 // POST /api/store/buy/bundle
 router.post("/buy/bundle", requireAuth, validate(BundleSchema), async (req: Request, res) => {
   try {
@@ -120,6 +130,67 @@ router.post("/buy/pass", requireAuth, validate(PassSchema), async (req: Request,
   } catch (err) {
     console.error("[Store] Pass purchase error:", err);
     res.status(500).json({ error: "Failed to initiate pass purchase" });
+  }
+});
+
+// POST /api/store/subscribe
+router.post("/subscribe", requireAuth, validate(SubscriptionSchema), async (req: Request, res) => {
+  try {
+    const plan = SUBSCRIPTIONS[req.body.plan_id];
+    if (!plan) {
+      console.warn(`[Store] Invalid plan ID: ${req.body.plan_id}`);
+      res.status(400).json({ error: `Invalid plan ID: ${req.body.plan_id}` });
+      return;
+    }
+
+    const user = await User.findById(req.user!.uid, "email").lean();
+    if (!user) {
+      console.error(`[Store] User ${req.user!.uid} not found`);
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Free plan activation
+    if (plan.price_ngn === 0) {
+      await User.updateOne(
+        { _id: req.user!.uid },
+        {
+          subscription_plan: req.body.plan_id,
+          subscription_expires: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        }
+      );
+      console.log(`[Store] Free plan activated for ${req.user!.uid}`);
+      res.json({ authorization_url: "/store", reference: "free-plan" });
+      return;
+    }
+
+    // Paid plan - initiate payment
+    const reference = `LN-SUB-${uuid().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
+
+    await Transaction.create({
+      user_id: new mongoose.Types.ObjectId(req.user!.uid),
+      reference,
+      gateway: "paystack",
+      amount_ngn: plan.price_ngn,
+      questions_added: 0,
+      subscription_plan: req.body.plan_id,
+      status: "pending",
+    });
+
+    console.log(`[Store] Initiating subscription: ${reference}, ${plan.name} @ ₦${plan.price_ngn}`);
+
+    const result = await initPaystackPayment({
+      userId: req.user!.uid,
+      email: user.email,
+      amountNGN: plan.price_ngn,
+      questionsToAdd: 0,
+      reference,
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error("[Store] Subscription error:", err);
+    res.status(500).json({ error: "Failed to initiate subscription" });
   }
 });
 
