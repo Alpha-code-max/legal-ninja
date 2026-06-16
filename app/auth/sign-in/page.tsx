@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { api, setToken } from "@/lib/api/client";
-import { useUserStore } from "@/lib/store/user-store";
+import { useUserStore, type WeakArea } from "@/lib/store/user-store";
 import { useGuestStore } from "@/lib/store/guest-store";
 import { NeonButton } from "@/components/ui/NeonButton";
 
@@ -43,7 +43,7 @@ export default function SignInPage() {
         paid_questions_balance:   Number(u.paid_questions_balance ?? 0),
         earned_questions_balance: Number(u.earned_questions_balance ?? 0),
         active_passes:            (u.active_passes as []) ?? [],
-        weak_areas:               (u.weak_areas as string[]) ?? [],
+        weak_areas:               (u.weak_areas as WeakArea[]) ?? [],
         referral_count:           Number(u.referral_count ?? 0),
         recent_answers:           (u.recent_answers as boolean[]) ?? [],
       });
