@@ -272,7 +272,7 @@ export default function ProfilePage() {
             <div className="flex flex-wrap gap-2">
               {user.weak_areas.map((area) => (
                 <span
-                  key={area}
+                  key={area._id || area.subject}
                   className="px-3 py-1.5 rounded-full text-xs font-bold border"
                   style={{
                     background: "color-mix(in srgb, var(--cyber-red) 10%, transparent)",
@@ -280,7 +280,7 @@ export default function ProfilePage() {
                     color: "var(--cyber-red)",
                   }}
                 >
-                  {area}
+                  {area.subject.replace(/_/g, " ")}
                 </span>
               ))}
             </div>

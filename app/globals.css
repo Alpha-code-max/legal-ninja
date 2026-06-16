@@ -83,7 +83,8 @@ body {
   letter-spacing: -0.01em;
   transition: background-color 0.25s ease, color 0.25s ease;
   overflow-x: hidden;
-  overscroll-behavior-y: contain;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
 }
 
 /* Playful display font for headings */

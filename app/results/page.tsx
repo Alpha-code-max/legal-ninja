@@ -415,7 +415,7 @@ function ResultsContent() {
                   {a.correct ? "✓" : "✗"}
                 </div>
                 <span className="truncate flex-1 text-xs" style={{ color: "var(--text-base)" }}>
-                  {q?.question.slice(0, 52)}...
+                  {(q?.question ?? "Question text unavailable").slice(0, 52)}...
                 </span>
                 <span className="text-[10px] font-mono shrink-0" style={{ color: "var(--text-muted)" }}>
                   {(a.time_taken_ms / 1000).toFixed(1)}s

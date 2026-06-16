@@ -144,7 +144,7 @@ function QuizContent() {
     }
     // Weak area focus: pre-select first weak area
     if (mode === "weak_area_focus" && user.weak_areas.length > 0) {
-      setSelectedSubject(user.weak_areas[0]);
+      setSelectedSubject(user.weak_areas[0].subject);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -292,6 +292,7 @@ function QuizContent() {
     if (!q) { setPhase("setup"); return; }
     setIsOffline(fromOffline);
     setCurrentQuestion(q);
+    game.setQuestions([q]);
     setAskedQuestionIds([q.id]);
     setQuestionIndex(0);
     setCombo(0);
@@ -402,6 +403,7 @@ function QuizContent() {
                   setCurrentQuestion(q);
                   setQuestionIndex(nextIndex);
                   setAskedQuestionIds([...askedQuestionIds, q.id]);
+                  game.setQuestions([...game.questions, q]);
                 }
                 setEssayResult(null);
                 setEssayUserAnswer(null);
@@ -431,6 +433,7 @@ function QuizContent() {
                 setCurrentQuestion(q);
                 setQuestionIndex(nextIndex);
                 setAskedQuestionIds([...askedQuestionIds, q.id]);
+                game.setQuestions([...game.questions, q]);
               }
               setEssayResult(null);
               setEssayUserAnswer(null);
@@ -456,6 +459,7 @@ function QuizContent() {
           setCurrentQuestion(q);
           setQuestionIndex(nextIndex);
           setAskedQuestionIds([...askedQuestionIds, q.id]);
+          game.setQuestions([...game.questions, q]);
         }
         setIsRevealing(false);
       }
@@ -492,6 +496,7 @@ function QuizContent() {
         setCurrentQuestion(q);
         setQuestionIndex(nextIndex);
         setAskedQuestionIds([...askedQuestionIds, q.id]);
+        game.setQuestions([...game.questions, q]);
       }
       setIsRevealing(false);
     };
@@ -554,7 +559,7 @@ function QuizContent() {
             <div className="rounded-xl p-3 text-xs"
                style={{ color: "var(--cyber-red)", background: "color-mix(in srgb, var(--cyber-red) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-red) 25%, transparent)" }}>
               <p className="font-black mb-1">🔥 Targeting your weak area:</p>
-              <p className="font-bold">{user.weak_areas[0].replace(/_/g, " ")}</p>
+              <p className="font-bold">{user.weak_areas[0].subject.replace(/_/g, " ")}</p>
             </div>
           )}
 
