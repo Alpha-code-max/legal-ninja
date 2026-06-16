@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore } from "@/lib/store/game-store";
 import { api } from "@/lib/api/client";
 import { NeonButton } from "@/components/ui/NeonButton";
+import { Pill } from "@/components/ui/Pill";
+import { EmptyState, InlineSpinner } from "@/components/ui/states";
 import { cn } from "@/lib/utils";
 
 interface ReviewItem {
@@ -36,16 +38,9 @@ function ReviewCard({ item, index, onFetchExplanation, isGuest }: {
     >
       {/* Subject badge + number */}
       <div className="flex items-center justify-between">
-        <span
-          className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full"
-          style={{
-            color: "var(--cyber-red)",
-            background: "color-mix(in srgb, var(--cyber-red) 10%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--cyber-red) 25%, transparent)",
-          }}
-        >
+        <Pill accent="red" border={25} className="text-[10px] font-black uppercase tracking-widest px-2 py-1">
           {item.subject.replace(/_/g, " ")}
-        </span>
+        </Pill>
         <span className="text-xs font-bold font-mono" style={{ color: "var(--text-muted)" }}>
           #{index + 1}
         </span>
@@ -156,10 +151,7 @@ function ReviewCard({ item, index, onFetchExplanation, isGuest }: {
                   }}
                 >
                   {item.loadingExplanation ? (
-                    <div className="flex items-center gap-2 py-1">
-                      <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}>⚖️</motion.span>
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>Consulting case law...</span>
-                    </div>
+                    <InlineSpinner label="Consulting case law…" />
                   ) : (
                     <p style={{ color: "var(--text-base)" }}>
                       {item.explanation ?? "Explanation unavailable — check your internet connection and try again."}
@@ -249,16 +241,25 @@ function ReviewContent() {
           </p>
         </motion.div>
 
-        {/* Review cards */}
-        {items.map((item, i) => (
-          <ReviewCard
-            key={i}
-            item={item}
-            index={i}
-            onFetchExplanation={fetchExplanation}
-            isGuest={isGuest}
+        {/* Review cards (or perfect-score empty state) */}
+        {items.length === 0 ? (
+          <EmptyState
+            emoji="🏆"
+            accent="green"
+            title="Flawless victory!"
+            description="You didn't miss a single question this session. Nothing to review — keep the streak alive."
           />
-        ))}
+        ) : (
+          items.map((item, i) => (
+            <ReviewCard
+              key={i}
+              item={item}
+              index={i}
+              onFetchExplanation={fetchExplanation}
+              isGuest={isGuest}
+            />
+          ))
+        )}
 
         {/* CTAs */}
         <motion.div

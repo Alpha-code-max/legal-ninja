@@ -1,8 +1,9 @@
 "use client";
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { ErrorState } from "@/components/ui/states";
 
-export default function GlobalError({
+export default function Error({
   error,
   reset,
 }: {
@@ -14,27 +15,11 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
-      <body style={{ fontFamily: "sans-serif", padding: "40px", textAlign: "center" }}>
-        <h1 style={{ fontSize: "28px", marginBottom: "20px" }}>Something went wrong</h1>
-        <p style={{ color: "#666", marginBottom: "30px" }}>
-          An unexpected error occurred. Our team has been notified.
-        </p>
-        <button
-          onClick={reset}
-          style={{
-            padding: "10px 20px",
-            fontSize: "16px",
-            backgroundColor: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          Try again
-        </button>
-      </body>
-    </html>
+    <ErrorState
+      fullScreen
+      title="Something glitched"
+      description="An unexpected error occurred and our team has been notified. Try again — your progress is safe."
+      onRetry={reset}
+    />
   );
 }

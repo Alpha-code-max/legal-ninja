@@ -18,6 +18,7 @@ import { LEVELS } from "@/lib/config/progression";
 import { TRACKS } from "@/lib/config/tracks";
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { LoadingScreen } from "@/components/ui/states";
 import * as Lucide from "lucide-react";
 
 const QUICK_ACTIONS = [
@@ -364,6 +365,30 @@ function DashboardContent() {
           </GlassCard>
         </motion.div>
 
+        {/* First-session guidance — new ranked players who haven't trained yet */}
+        {user.uid && user.total_questions_answered === 0 && (
+          <motion.div variants={itemVars}>
+            <GlassCard className="p-5 relative overflow-hidden" hover={false}
+                       style={{ borderLeft: "4px solid var(--cyber-green)" } as React.CSSProperties}>
+              <div className="absolute inset-0 opacity-10"
+                   style={{ background: "linear-gradient(135deg, var(--cyber-green), var(--cyber-cyan))" }} />
+              <div className="relative z-10 flex items-start gap-3">
+                <div className="text-3xl shrink-0">🥷</div>
+                <div className="flex-1">
+                  <p className="text-sm font-black neon-text-green">Welcome to the dojo, {user.username || "Recruit"}!</p>
+                  <p className="text-xs mt-1 mb-3" style={{ color: "var(--text-muted)" }}>
+                    Start with a Solo battle — pick a subject, answer questions, earn XP, and level up. Your first session takes about 2 minutes.
+                  </p>
+                  <NeonButton variant="green" size="sm"
+                    onClick={() => router.push(`/quiz?mode=solo_practice&track=${track}`)}>
+                    ⚔️ Start Your First Battle
+                  </NeonButton>
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
+        )}
+
         {/* Quick Actions Grid */}
         <motion.div variants={itemVars} className="space-y-3">
           <h3 className="text-[10px] font-black uppercase tracking-[0.3em]"
@@ -511,13 +536,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center font-black animate-pulse neon-text-cyan">
-          BOOTING_SYSTEM...
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingScreen label="Booting System" />}>
       <DashboardContent />
     </Suspense>
   );

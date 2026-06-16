@@ -17,7 +17,8 @@
   --cyber-card-bg:rgba(13, 27, 42, 0.75);
   --cyber-border: rgba(26, 45, 66, 0.55);
   --text-base:    #e2eaf0;
-  --text-muted:   rgba(226, 234, 240, 0.45);
+  /* Bumped from 0.45 → 0.62 for readable contrast on the dark surface */
+  --text-muted:   rgba(226, 234, 240, 0.62);
   --orb-a:        rgba(0, 245, 255, 0.12);
   --orb-b:        rgba(192, 38, 211, 0.10);
   --grid-line:    rgba(26, 45, 66, 0.12);
@@ -49,7 +50,8 @@
   --cyber-card-bg:rgba(255, 255, 255, 0.88);
   --cyber-border: rgba(124, 58, 237, 0.18);
   --text-base:    #1e1b4b;
-  --text-muted:   rgba(30, 27, 75, 0.55);
+  /* Bumped from 0.55 → 0.68 for readable contrast on the light surface */
+  --text-muted:   rgba(30, 27, 75, 0.68);
   --orb-a:        rgba(2, 132, 199, 0.12);
   --orb-b:        rgba(124, 58, 237, 0.10);
   --grid-line:    rgba(124, 58, 237, 0.06);
@@ -238,3 +240,24 @@ h2 {
 ::-webkit-scrollbar-track { background: var(--cyber-bg); }
 ::-webkit-scrollbar-thumb { background: var(--cyber-border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--cyber-cyan); }
+
+/* ─── Accessibility ─── */
+
+/* Visible keyboard focus ring — keyboard users only, never on mouse click */
+:focus-visible {
+  outline: 2px solid var(--cyber-cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect users who prefer reduced motion — kill non-essential animation */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

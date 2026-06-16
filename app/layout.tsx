@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { MotionConfig } from "framer-motion";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { AnalyticsProvider } from "@/components/providers/AnalyticsProvider";
 
@@ -38,11 +39,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <AnalyticsProvider>
-          <main className="relative z-10 min-h-screen">
-            {children}
-          </main>
+          <MotionConfig reducedMotion="user">
+            <main className="relative z-10 min-h-screen">
+              {children}
+            </main>
 
-          <BottomNav />
+            <BottomNav />
+          </MotionConfig>
         </AnalyticsProvider>
       </body>
     </html>

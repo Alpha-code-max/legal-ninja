@@ -10,6 +10,8 @@ import { LEVELS } from "@/lib/config/progression";
 import { XPBar } from "@/components/ui/XPBar";
 import { LevelBadge } from "@/components/ui/LevelBadge";
 import { NeonButton } from "@/components/ui/NeonButton";
+import { Pill } from "@/components/ui/Pill";
+import { Confetti, LevelUpOverlay } from "@/components/ui/Celebration";
 import { cn } from "@/lib/utils";
 
 const GRADE_COLORS: Record<string, string> = {
@@ -57,33 +59,6 @@ function TrophyIllustration({ grade }: { grade: string }) {
         {grade === "A+" ? "★" : grade === "A" ? "⬟" : "◆"}
       </text>
     </svg>
-  );
-}
-
-function ConfettiPieces({ show }: { show: boolean }) {
-  if (!show) return null;
-  const colors = ["var(--cyber-cyan)", "var(--cyber-purple)", "var(--cyber-gold)", "var(--cyber-green)", "var(--cyber-red)"];
-  const pieces = Array.from({ length: 24 }, (_, i) => ({
-    id: i,
-    x: 10 + (i % 8) * 11,
-    color: colors[i % colors.length],
-    delay: (i * 0.08),
-    duration: 1.5 + Math.random() * 1,
-    rotate: Math.random() * 720,
-  }));
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {pieces.map((p) => (
-        <motion.div
-          key={p.id}
-          className="absolute w-2 h-2 rounded-sm top-0"
-          style={{ left: `${p.x}%`, background: p.color }}
-          initial={{ y: -20, rotate: 0, opacity: 1 }}
-          animate={{ y: "110vh", rotate: p.rotate, opacity: 0 }}
-          transition={{ duration: p.duration, delay: p.delay, ease: "easeIn" }}
-        />
-      ))}
-    </div>
   );
 }
 
@@ -190,15 +165,30 @@ function ResultsContent() {
   const levelDirection = game.level_direction;
   const newBadges      = game.new_badges ?? [];
 
+  const [showLevelUp, setShowLevelUp] = useState(false);
+
   useEffect(() => {
     if (game.status !== "finished") router.replace("/dashboard");
   }, [game.status, router]);
 
+  // Trigger the full-screen level-up celebration once for ranked players
+  useEffect(() => {
+    if (!isGuest && levelDirection === "up") setShowLevelUp(true);
+  }, [isGuest, levelDirection]);
+
   const gradeColor = GRADE_COLORS[grade.grade] ?? "#d1d5db";
+  const currentRank = LEVELS.find((l) => l.level === user.level);
 
   return (
     <div className="min-h-screen px-4 py-10 pb-36">
-      <ConfettiPieces show={isGoodGrade} />
+      <Confetti show={isGoodGrade || (!isGuest && levelDirection === "up")} />
+      {showLevelUp && (
+        <LevelUpOverlay
+          level={user.level}
+          rankName={currentRank?.title}
+          onDismiss={() => setShowLevelUp(false)}
+        />
+      )}
 
       <div className="max-w-lg mx-auto space-y-5">
 
@@ -326,10 +316,7 @@ function ResultsContent() {
             <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--cyber-gold)" }}>🏅 New Badge{newBadges.length > 1 ? "s" : ""} Earned!</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {newBadges.map((b) => (
-                <span key={b} className="px-3 py-1 rounded-full text-xs font-bold border"
-                  style={{ borderColor: "color-mix(in srgb, var(--cyber-gold) 40%, transparent)", background: "color-mix(in srgb, var(--cyber-gold) 10%, transparent)", color: "var(--cyber-gold)" }}>
-                  {b}
-                </span>
+                <Pill key={b} accent="gold">{b.replace(/_/g, " ")}</Pill>
               ))}
             </div>
           </motion.div>

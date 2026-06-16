@@ -9,6 +9,7 @@ import { LevelBadge } from "@/components/ui/LevelBadge";
 import { StreakCounter } from "@/components/ui/StreakCounter";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Pill } from "@/components/ui/Pill";
 import { LEVELS, getNextLevel } from "@/lib/config/progression";
 import { calcAccuracy } from "@/lib/utils";
 
@@ -271,17 +272,9 @@ export default function ProfilePage() {
             </div>
             <div className="flex flex-wrap gap-2">
               {user.weak_areas.map((area) => (
-                <span
-                  key={area._id || area.subject}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold border"
-                  style={{
-                    background: "color-mix(in srgb, var(--cyber-red) 10%, transparent)",
-                    borderColor: "color-mix(in srgb, var(--cyber-red) 40%, transparent)",
-                    color: "var(--cyber-red)",
-                  }}
-                >
+                <Pill key={area._id || area.subject} accent="red">
                   {area.subject.replace(/_/g, " ")}
-                </span>
+                </Pill>
               ))}
             </div>
           </motion.div>
