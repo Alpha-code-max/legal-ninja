@@ -134,11 +134,14 @@ export default function ProfilePage() {
     .map((a) => (typeof a === "string" ? ({ subject: a } as WeakArea) : a))
     .filter((a): a is WeakArea => !!a && typeof a.subject === "string" && a.subject.length > 0);
 
+  // Defensive: badges should be strings; drop anything malformed.
+  const badges = (user.badges ?? []).filter((b): b is string => typeof b === "string" && b.length > 0);
+
   const stats = [
     { label: "Questions",  value: user.total_questions_answered.toLocaleString(), color: "var(--cyber-cyan)",   emoji: "📖" },
     { label: "Accuracy",   value: `${accuracy}%`,                                 color: accuracy >= 75 ? "var(--cyber-green)" : accuracy >= 60 ? "var(--cyber-gold)" : "var(--cyber-red)", emoji: accuracy >= 75 ? "✅" : "⚠️" },
     { label: "Best Streak",value: `${user.longest_streak}`,                       color: "var(--cyber-gold)",   emoji: "🔥" },
-    { label: "Badges",     value: user.badges.length.toString(),                  color: "var(--cyber-purple)", emoji: "🏅" },
+    { label: "Badges",     value: badges.length.toString(),                       color: "var(--cyber-purple)", emoji: "🏅" },
   ];
 
   return (
@@ -236,14 +239,14 @@ export default function ProfilePage() {
               style={{ color: "var(--text-muted)" }}>
             Achievement Badges
           </h3>
-          {user.badges.length === 0 ? (
+          {badges.length === 0 ? (
             <div className="text-center py-6">
               <div className="text-4xl mb-2">🔒</div>
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>Complete quests to earn badges</p>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {user.badges.map((badge) => (
+              {badges.map((badge) => (
                 <motion.span
                   key={badge}
                   whileHover={{ scale: 1.1 }}
