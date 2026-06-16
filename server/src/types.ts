@@ -34,7 +34,7 @@ export interface DbUser {
   paid_questions_balance: number;
   earned_questions_balance: number;
   badges: string[];
-  weak_areas: string[];
+  weak_areas: { subject: string; wrong_count: number; correct_count: number; last_wrong_at: Date }[];
   recent_answers: boolean[];
   last_demotion_at: Date | null;
   last_login_at: Date;
