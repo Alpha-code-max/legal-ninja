@@ -44,7 +44,7 @@ export interface UserProfile {
   xp: number; level: number; current_streak: number; longest_streak: number;
   total_questions_answered: number; total_correct_answers: number;
   free_questions_remaining: number; paid_questions_balance: number; earned_questions_balance: number;
-  badges: string[]; weak_areas: { subject: string; wrong_count: number; correct_count: number; last_wrong_at: string }[]; referral_count: number; referral_code: string;
+  badges: string[]; weak_areas: { subject: string; wrong_count: number; correct_count: number; last_wrong_at: string; _id?: string }[]; referral_count: number; referral_code: string;
   track: string; role?: string; active_passes: unknown[];
   daily_goal: { progress: number; target: number; completed: boolean };
 }

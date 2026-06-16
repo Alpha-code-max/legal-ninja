@@ -150,9 +150,9 @@ export default function Profile() {
             <Text style={{ color: colors.textMuted, fontSize: 10, fontFamily: "SpaceGrotesk_700Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Weak Areas</Text>
             <View style={{ gap: 8 }}>
               {user.weak_areas.map((w) => (
-                <View key={w} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <Text style={{ color: "#FF2D55", fontSize: 12, fontFamily: "SpaceGrotesk_700Bold" }}>{w.replace(/_/g, " ")}</Text>
-                  <NeonButton label="Practice →" size="sm" variant="red" onPress={() => router.push({ pathname: "/quiz/setup", params: { subject: w } })} />
+                <View key={w._id ?? w.subject} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <Text style={{ color: "#FF2D55", fontSize: 12, fontFamily: "SpaceGrotesk_700Bold" }}>{w.subject.replace(/_/g, " ")}</Text>
+                  <NeonButton label="Practice →" size="sm" variant="red" onPress={() => router.push({ pathname: "/quiz/setup", params: { subject: w.subject } })} />
                 </View>
               ))}
             </View>
