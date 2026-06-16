@@ -8,6 +8,16 @@ export const metadata: Metadata = {
   title: "Legal Ninja — Gamified Law Study",
   description: "Master law through competitive quiz battles. Level up. Dominate the leaderboard.",
   keywords: ["law", "legal", "quiz", "study", "gamified", "Nigeria", "bar exam"],
+  icons: {
+    icon: "/logo-dark.jpeg",
+    shortcut: "/logo-dark.jpeg",
+    apple: "/logo-dark.jpeg",
+  },
+  openGraph: {
+    title: "Legal Ninja — Gamified Law Study",
+    description: "Master law through competitive quiz battles. Level up. Dominate the leaderboard.",
+    images: ["/logo-dark.jpeg"],
+  },
 };
 
 export const viewport: Viewport = {

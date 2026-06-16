@@ -2,12 +2,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { api, setToken } from "@/lib/api/client";
 import { useUserStore, type WeakArea } from "@/lib/store/user-store";
 import { useGuestStore } from "@/lib/store/guest-store";
 import { analytics } from "@/lib/analytics";
 import { NeonButton } from "@/components/ui/NeonButton";
+import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
 
 const TRACKS = [
@@ -87,23 +87,18 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-6 sm:py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-6 sm:py-12 relative overflow-hidden">
+      {/* Brand motif watermark */}
+      <div className="logo-motif absolute inset-0 pointer-events-none" aria-hidden />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 22 }}
-        className="cyber-card p-6 sm:p-8 w-full max-w-md space-y-4 sm:space-y-6"
+        className="cyber-card p-6 sm:p-8 w-full max-w-md space-y-4 sm:space-y-6 relative z-10"
       >
         {/* Logo */}
         <div className="text-center space-y-1">
-          <div className="relative w-16 h-16 mx-auto mb-2">
-            <Image
-              src="/logo.png.png"
-              alt="Legal Ninja Logo"
-              fill
-              className="object-contain"
-            />
-          </div>
+          <Logo size={72} priority className="mx-auto mb-2" />
           <h1 className="text-2xl font-black gradient-text">Join Legal Ninja</h1>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             100 free questions. No credit card.

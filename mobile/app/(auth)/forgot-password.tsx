@@ -51,8 +51,8 @@ export default function ForgotPassword() {
           <>
             <View style={{ alignItems: "center", marginBottom: 24 }}>
               <Image 
-                source={require("@/assets/logo.png")} 
-                style={{ width: 100, height: 100, marginBottom: 16 }} 
+                source={require("@/assets/logo.jpeg")}
+                style={{ width: 100, height: 100, marginBottom: 16 }}
                 resizeMode="contain" 
               />
               <Text style={{ fontSize: 24, fontFamily: "SpaceGrotesk_700Bold", color: colors.text, marginBottom: 8 }}>Reset Password</Text>

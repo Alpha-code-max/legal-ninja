@@ -219,6 +219,29 @@ h2 {
   }
 }
 
+/* ─── Brand logo — theme-aware variant swap with background knockout ─── */
+/* Default (dark theme): show the white-on-black mark, screen out the black bg */
+.brand-logo .logo-dark  { display: block; mix-blend-mode: screen; }
+.brand-logo .logo-light { display: none; }
+/* Light theme: show the black-on-white mark, multiply out the white bg */
+[data-theme="light"] .brand-logo .logo-dark  { display: none; }
+[data-theme="light"] .brand-logo .logo-light { display: block; mix-blend-mode: multiply; }
+
+/* Faint logo watermark for motif/background use */
+.logo-motif {
+  background-image: url("/logo-dark.jpeg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  mix-blend-mode: screen;
+  opacity: 0.04;
+}
+[data-theme="light"] .logo-motif {
+  background-image: url("/logo-light.jpeg");
+  mix-blend-mode: multiply;
+  opacity: 0.05;
+}
+
 /* Grid background helper — uses CSS var so it themes */
 .cyber-grid {
   background-image:

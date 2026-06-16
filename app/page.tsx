@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Logo } from "@/components/ui/Logo";
 import { useUserStore } from "@/lib/store/user-store";
 
 export default function Home() {
@@ -14,8 +15,9 @@ export default function Home() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl border-b" style={{ borderColor: "var(--cyber-border)", background: "rgba(15, 15, 30, 0.7)" }}>
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => router.push("/")} className="text-xl font-black neon-text-cyan truncate">
-            ⚔️ NINJA
+          <button onClick={() => router.push("/")} className="flex items-center gap-2 truncate">
+            <Logo size={36} priority />
+            <span className="text-xl font-black neon-text-cyan">NINJA</span>
           </button>
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <ThemeToggle />
@@ -41,8 +43,11 @@ export default function Home() {
       <section className="min-h-screen flex items-center justify-center relative overflow-hidden px-4 pt-20 mt-16">
         <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full blur-[140px] pointer-events-none" style={{ background: "var(--orb-a)" }} />
         <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full blur-[140px] pointer-events-none" style={{ background: "var(--orb-b)" }} />
+        {/* Brand motif watermark */}
+        <div className="logo-motif absolute inset-0 pointer-events-none" aria-hidden />
 
         <div className="relative max-w-4xl text-center space-y-8">
+          <Logo size={112} priority className="mx-auto" />
           <h1 className="text-5xl md:text-7xl font-black leading-tight">
             <span className="gradient-text">Master Law</span>
             <br />

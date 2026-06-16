@@ -63,8 +63,8 @@ export default function SignUp() {
 
           <View style={{ alignItems: "center", marginBottom: 20 }}>
             <Image 
-              source={require("@/assets/logo.png")} 
-              style={{ width: 80, height: 80, marginBottom: 8 }} 
+              source={require("@/assets/logo.jpeg")}
+              style={{ width: 80, height: 80, marginBottom: 8 }}
               resizeMode="contain" 
             />
             <Text style={{ fontSize: 24, fontFamily: "SpaceGrotesk_700Bold", color: colors.text, marginBottom: 4 }}>Create Account</Text>

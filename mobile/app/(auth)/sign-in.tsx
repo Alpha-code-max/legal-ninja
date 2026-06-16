@@ -59,8 +59,8 @@ export default function SignIn() {
         <FadeIn duration={400}>
           <View style={{ alignItems: "center", marginBottom: 40 }}>
             <Image 
-              source={require("@/assets/logo.png")} 
-              style={{ width: 120, height: 120, marginBottom: 8 }} 
+              source={require("@/assets/logo.jpeg")}
+              style={{ width: 120, height: 120, marginBottom: 8 }}
               resizeMode="contain" 
             />
             <Text style={{ fontSize: 28, fontFamily: "SpaceGrotesk_700Bold", color: "#00F5FF", letterSpacing: 1 }}>LEGAL NINJA</Text>
