@@ -478,6 +478,49 @@ export async function generateDeepExplanation(params: DeepExplanationParams): Pr
   throw lastErr ?? new Error("All AI providers failed to generate deep explanation");
 }
 
+export interface AnswerExplanationParams {
+  question: string;
+  wrongAnswer: string;
+  correctAnswer: string;
+  subject: string;
+}
+
+/**
+ * Generates a legal explanation for a reviewed MCQ. Used by the web "Legal Explanation"
+ * accordion on the mistake-review screen. Returns plain text (2-4 sentences).
+ */
+export async function generateAnswerExplanation(params: AnswerExplanationParams): Promise<string> {
+  const subjectLabel = getSubjectMeta(params.subject)?.label ?? params.subject.replace(/_/g, " ");
+  const prompt = `SUBJECT: ${subjectLabel}
+QUESTION:
+"""
+${params.question}
+"""
+CORRECT ANSWER: ${params.correctAnswer}
+${params.wrongAnswer ? `STUDENT'S WRONG ANSWER: ${params.wrongAnswer}` : ""}
+Explain concisely (2-4 sentences) why the correct answer is right${params.wrongAnswer ? " and why the student's answer is wrong" : ""}. Reference relevant Nigerian case law or statutes where applicable.`;
+
+  const generators = [
+    { name: "OpenAI", fn: generateWithOpenAI, key: process.env.OPENAI_API_KEY },
+    { name: "Gemini", fn: generateWithGemini, key: process.env.GEMINI_API_KEY },
+    { name: "Groq", fn: generateWithGroq, key: process.env.GROQ_API_KEY },
+  ].filter(g => !!g.key);
+
+  if (generators.length === 0) throw new Error("No AI provider configured");
+
+  let lastErr: Error | null = null;
+  for (const gen of generators) {
+    try {
+      const raw = await gen.fn(prompt, "You are a strict but supportive Nigerian law tutor. Be concise and cite authority where relevant.");
+      if (raw && raw.trim()) return raw.trim();
+    } catch (err) {
+      console.error(`[AI] ${gen.name} failed for answer explanation:`, (err as any).message || err);
+      lastErr = err as Error;
+    }
+  }
+  throw lastErr ?? new Error("All AI providers failed to generate explanation");
+}
+
 export interface EvaluateMCQAnswerParams {
   question: string;
   correctOption: string;

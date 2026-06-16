@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { getOrGenerateQuestions, checkAndDeductQuestion } from "../services/question";
+import { generateAnswerExplanation } from "../services/ai";
 import { Question } from "../models/Question";
 import { User } from "../models/User";
 import { isSubjectAllowed } from "../config/subjects";
@@ -118,6 +119,30 @@ router.post("/guest-reveal", async (req: Request, res) => {
     res.json({ correct_option: question.correct_option, explanation: question.explanation });
   } catch (err) {
     res.status(500).json({ error: "Failed to reveal answer" });
+  }
+});
+
+// ─── Generate a legal explanation for a reviewed answer (auth required) ───────
+const ExplainSchema = z.object({
+  question:       z.string().min(1).max(2000),
+  wrong_answer:   z.string().max(500).optional().default(""),
+  correct_answer: z.string().min(1).max(500),
+  subject:        z.string().min(1).max(60),
+});
+
+router.post("/explain", requireAuth, validate(ExplainSchema), async (req: Request, res) => {
+  try {
+    const { question, wrong_answer, correct_answer, subject } = req.body as z.infer<typeof ExplainSchema>;
+    const explanation = await generateAnswerExplanation({
+      question,
+      wrongAnswer: wrong_answer,
+      correctAnswer: correct_answer,
+      subject,
+    });
+    res.json({ explanation });
+  } catch (err) {
+    console.error("Explain error:", err);
+    res.status(500).json({ error: "Failed to generate explanation" });
   }
 });
 
