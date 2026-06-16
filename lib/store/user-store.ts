@@ -194,7 +194,29 @@ export const useUserStore = create<UserState & UserActions>()(
           badges: [...new Set([...s.badges, ...newBadges])],
         })),
     }),
-    { name: "legal-ninja-user" }
+    {
+      name: "legal-ninja-user",
+      version: 1,
+      // Older clients stored weak_areas as plain strings. Coerce any legacy
+      // string entries into WeakArea objects and drop malformed ones so the
+      // profile render never crashes on stale persisted state.
+      migrate: (persisted: unknown) => {
+        const state = (persisted ?? {}) as Partial<UserState>;
+        if (Array.isArray(state.weak_areas)) {
+          state.weak_areas = (state.weak_areas as unknown[])
+            .map((a) =>
+              typeof a === "string"
+                ? { subject: a, wrong_count: 0, correct_count: 0, last_wrong_at: "" }
+                : a
+            )
+            .filter(
+              (a): a is WeakArea =>
+                !!a && typeof (a as WeakArea).subject === "string" && (a as WeakArea).subject.length > 0
+            );
+        }
+        return state as UserState & UserActions;
+      },
+    }
   )
 );
 

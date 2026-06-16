@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import { motion } from "framer-motion";
-import { useUserStore } from "@/lib/store/user-store";
+import { useUserStore, type WeakArea } from "@/lib/store/user-store";
 import { XPBar } from "@/components/ui/XPBar";
 import { LevelBadge } from "@/components/ui/LevelBadge";
 import { StreakCounter } from "@/components/ui/StreakCounter";
@@ -127,6 +127,12 @@ export default function ProfilePage() {
   const currentLevel = LEVELS.find((l) => l.level === user.level) ?? LEVELS[0];
   const nextLevel    = getNextLevel(user.level);
   const accuracy     = calcAccuracy(user.total_correct_answers, user.total_questions_answered);
+
+  // Defensive: tolerate legacy string entries and skip any malformed weak_area
+  // so a bad record can never crash the whole profile page.
+  const weakAreas = ((user.weak_areas ?? []) as Array<WeakArea | string>)
+    .map((a) => (typeof a === "string" ? ({ subject: a } as WeakArea) : a))
+    .filter((a): a is WeakArea => !!a && typeof a.subject === "string" && a.subject.length > 0);
 
   const stats = [
     { label: "Questions",  value: user.total_questions_answered.toLocaleString(), color: "var(--cyber-cyan)",   emoji: "📖" },
@@ -257,7 +263,7 @@ export default function ProfilePage() {
         </motion.div>
 
         {/* Weak areas */}
-        {user.weak_areas.length > 0 && (
+        {weakAreas.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -271,8 +277,8 @@ export default function ProfilePage() {
               </h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              {user.weak_areas.map((area) => (
-                <Pill key={area._id || area.subject} accent="red">
+              {weakAreas.map((area, i) => (
+                <Pill key={area._id || area.subject || i} accent="red">
                   {area.subject.replace(/_/g, " ")}
                 </Pill>
               ))}
