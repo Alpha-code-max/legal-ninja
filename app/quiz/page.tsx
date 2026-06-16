@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore, type Question } from "@/lib/store/game-store";
-import { useUserStore } from "@/lib/store/user-store";
+import { useUserStore, type WeakArea } from "@/lib/store/user-store";
 import { useGuestStore, GUEST_DAILY_LIMIT } from "@/lib/store/guest-store";
 import { analytics } from "@/lib/analytics";
 import { QuestionCard } from "@/components/game/QuestionCard";
@@ -555,13 +555,19 @@ function QuizContent() {
           )}
 
           {/* Weak area focus — show target subjects */}
-          {mode === "weak_area_focus" && !isGuest && user.weak_areas.length > 0 && (
-            <div className="rounded-xl p-3 text-xs"
-               style={{ color: "var(--cyber-red)", background: "color-mix(in srgb, var(--cyber-red) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-red) 25%, transparent)" }}>
-              <p className="font-black mb-1">🔥 Targeting your weak area:</p>
-              <p className="font-bold">{user.weak_areas[0].subject.replace(/_/g, " ")}</p>
-            </div>
-          )}
+          {(() => {
+            if (mode !== "weak_area_focus" || isGuest) return null;
+            const first = user.weak_areas[0] as WeakArea | string | undefined;
+            const subject = typeof first === "string" ? first : first?.subject;
+            if (!subject) return null;
+            return (
+              <div className="rounded-xl p-3 text-xs"
+                 style={{ color: "var(--cyber-red)", background: "color-mix(in srgb, var(--cyber-red) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-red) 25%, transparent)" }}>
+                <p className="font-black mb-1">🔥 Targeting your weak area:</p>
+                <p className="font-bold">{subject.replace(/_/g, " ")}</p>
+              </div>
+            );
+          })()}
 
           {loadError && (
             <div className="rounded-xl p-3 text-xs text-center space-y-2"
