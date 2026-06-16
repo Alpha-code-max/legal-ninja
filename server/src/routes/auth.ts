@@ -70,7 +70,7 @@ router.post("/register", validate(RegisterSchema), async (req: Request, res) => 
       ...(referredBy ? { earned_questions_balance: 20 } : {}),
     });
 
-    await sendVerificationEmail(email, username, verification_token).catch(console.error);
+    await sendVerificationEmail(email, username, verification_token, req.headers.origin).catch(console.error);
 
     const token = signToken({ uid: String(user._id), username: user.username, email: user.email, level: user.level, role: user.role });
     const { password_hash: _, email_verification_token: _vt, password_reset_token: _rt, ...safeUser } = user.toObject();
@@ -136,7 +136,7 @@ router.post("/resend-verification", async (req: Request, res) => {
       email_verification_token: token,
       email_verification_expires: expires,
     });
-    await sendVerificationEmail(email, user.username, token).catch(console.error);
+    await sendVerificationEmail(email, user.username, token, req.headers.origin).catch(console.error);
     res.json({ sent: true });
   } catch (err) {
     console.error("Resend verification error:", err);
@@ -156,7 +156,7 @@ router.post("/forgot-password", validate(ForgotPasswordSchema), async (req: Requ
         password_reset_token: token,
         password_reset_expires: expires,
       });
-      await sendPasswordResetEmail(email, user.username, token).catch(console.error);
+      await sendPasswordResetEmail(email, user.username, token, req.headers.origin).catch(console.error);
     }
     res.json({ sent: true });
   } catch (err) {

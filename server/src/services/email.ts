@@ -22,14 +22,24 @@ const APP_URL = process.env.FRONTEND_URL ?? "http://localhost:3000";
 async function send(to: string, subject: string, html: string): Promise<void> {
   const transport = createTransport();
   if (!transport) {
-    console.log(`[EMAIL] To: ${to}\nSubject: ${subject}\n${html.replace(/<[^>]+>/g, "")}`);
+    const linkMatch = html.match(/href="([^"]+)"/);
+    const link = linkMatch ? linkMatch[1] : "N/A";
+    console.log(`
+┌────────────────────────────────────────────────────────────┐
+│ [DEV EMAIL]
+│ To:      ${to}
+│ Subject: ${subject}
+│ URL:     ${link}
+└────────────────────────────────────────────────────────────┘
+    `);
     return;
   }
   await transport.sendMail({ from: FROM, to, subject, html });
 }
 
-export async function sendVerificationEmail(to: string, username: string, token: string): Promise<void> {
-  const link = `${APP_URL}/auth/verify-email?token=${token}`;
+export async function sendVerificationEmail(to: string, username: string, token: string, origin?: string): Promise<void> {
+  const appUrl = origin || APP_URL;
+  const link = `${appUrl}/auth/verify-email?token=${token}`;
   await send(to, "Verify your Legal Ninja account", `
     <div style="font-family:sans-serif;max-width:480px;margin:auto">
       <h2 style="color:#00F5FF">Welcome, ${username}! ⚔️</h2>
@@ -40,8 +50,9 @@ export async function sendVerificationEmail(to: string, username: string, token:
   `);
 }
 
-export async function sendPasswordResetEmail(to: string, username: string, token: string): Promise<void> {
-  const link = `${APP_URL}/auth/reset-password?token=${token}`;
+export async function sendPasswordResetEmail(to: string, username: string, token: string, origin?: string): Promise<void> {
+  const appUrl = origin || APP_URL;
+  const link = `${appUrl}/auth/reset-password?token=${token}`;
   await send(to, "Reset your Legal Ninja password", `
     <div style="font-family:sans-serif;max-width:480px;margin:auto">
       <h2 style="color:#C026D3">Password Reset 🔐</h2>
