@@ -112,6 +112,7 @@ function LevelChangeNotice({ direction }: { direction: "up" | "down" | null }) {
 }
 
 function SpacedRepetitionHint({ wrongSubjects }: { wrongSubjects: string[] }) {
+  const router = useRouter();
   if (wrongSubjects.length === 0) return null;
   const unique = [...new Set(wrongSubjects)].slice(0, 3);
   return (
@@ -119,7 +120,7 @@ function SpacedRepetitionHint({ wrongSubjects }: { wrongSubjects: string[] }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 1.1 }}
-      className="cyber-card p-4"
+      className="cyber-card p-4 space-y-3"
       style={{ borderColor: "color-mix(in srgb, var(--cyber-purple) 50%, transparent)" }}
     >
       <div className="flex items-start gap-3">
@@ -136,6 +137,9 @@ function SpacedRepetitionHint({ wrongSubjects }: { wrongSubjects: string[] }) {
           </p>
         </div>
       </div>
+      <NeonButton variant="purple" fullWidth size="sm" onClick={() => router.push("/quiz?mode=weak_area_focus")}>
+        🔥 Grind These Now
+      </NeonButton>
     </motion.div>
   );
 }
@@ -192,28 +196,6 @@ function ResultsContent() {
 
       <div className="max-w-lg mx-auto space-y-5">
 
-        {/* Guest results notice */}
-        {isGuest && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl p-4 text-center"
-            style={{ background: "color-mix(in srgb, var(--cyber-gold) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-gold) 30%, transparent)" }}
-          >
-            <p className="text-sm font-bold" style={{ color: "var(--cyber-gold)" }}>
-              🥷 Guest session — XP and progress not saved
-            </p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-              Sign up free to track your progress, earn XP, and climb the leaderboard.
-            </p>
-            <div className="mt-3">
-              <NeonButton variant="cyan" size="sm" onClick={() => router.push("/auth/sign-up")}>
-                Create Free Account
-              </NeonButton>
-            </div>
-          </motion.div>
-        )}
-
         {/* Hero Score Card */}
         <motion.div
           initial={{ scale: 0.7, opacity: 0 }}
@@ -246,6 +228,29 @@ function ResultsContent() {
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>{correct} / {total} correct</p>
           </div>
         </motion.div>
+
+        {/* Guest results notice */}
+        {isGuest && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+            className="rounded-xl p-4 text-center"
+            style={{ background: "color-mix(in srgb, var(--cyber-gold) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-gold) 30%, transparent)" }}
+          >
+            <p className="text-sm font-bold" style={{ color: "var(--cyber-gold)" }}>
+              🥷 Guest session — XP and progress not saved
+            </p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+              Sign up free to track your progress, earn XP, and climb the leaderboard.
+            </p>
+            <div className="mt-3">
+              <NeonButton variant="cyan" size="sm" onClick={() => router.push("/auth/sign-up")}>
+                Create Free Account
+              </NeonButton>
+            </div>
+          </motion.div>
+        )}
 
         {/* Motivational */}
         <motion.div

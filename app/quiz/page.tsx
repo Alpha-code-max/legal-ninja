@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore, type Question } from "@/lib/store/game-store";
-import { useUserStore, type WeakArea } from "@/lib/store/user-store";
+import { useUserStore, getTotalBalance, type WeakArea } from "@/lib/store/user-store";
 import { useGuestStore, GUEST_DAILY_LIMIT } from "@/lib/store/guest-store";
 import { analytics } from "@/lib/analytics";
 import { QuestionCard } from "@/components/game/QuestionCard";
@@ -544,6 +544,13 @@ function QuizContent() {
             </div>
           )}
 
+          {!isGuest && (
+            <div className="rounded-xl p-2.5 text-xs text-center flex items-center justify-center gap-1.5"
+                 style={{ background: "color-mix(in srgb, var(--cyber-green) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--cyber-green) 25%, transparent)", color: "var(--cyber-green)" }}>
+              📚 {getTotalBalance(user)} questions available
+            </div>
+          )}
+
           {/* Daily challenge — already played today */}
           {mode === "daily_challenge" && dailyBlocked && (
             <div className="rounded-xl p-4 text-center space-y-2"
@@ -692,6 +699,11 @@ function QuizContent() {
                 </button>
               ))}
             </div>
+            {selectedType === "essay" && (
+              <p className="text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>
+                Essay questions don&apos;t have a difficulty setting — that&apos;s why it&apos;s hidden above.
+              </p>
+            )}
           </div>
 
           {/* Question count */}

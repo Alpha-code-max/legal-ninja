@@ -26,6 +26,7 @@ const sections = [
       { label: "Grade C", value: "65-74%", desc: "Fair — Needs practice" },
       { label: "Grade D", value: "50-64%", desc: "Pass — Review weak areas" },
       { label: "Grade F", value: "<50%", desc: "Fail — Focus on fundamentals" },
+      { label: "Essay Scoring", value: "AI Rubric", desc: "Essays are graded by AI against a rubric for structure, legal accuracy, and citation — not the A-F scale above. Feedback appears after each essay." },
     ],
   },
   {
@@ -125,7 +126,8 @@ export default function InfoPage() {
                   transition={{ delay: sectionIdx * 0.05 + itemIdx * 0.02 }}
                   className="cyber-card p-4 space-y-2"
                   style={{
-                    borderColor: `${section.color}33`,
+                    borderColor: item.value === "Future" ? "var(--cyber-border)" : `${section.color}33`,
+                    opacity: item.value === "Future" ? 0.6 : 1,
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -135,11 +137,11 @@ export default function InfoPage() {
                     <p
                       className="text-xs font-black px-2 py-1 rounded-lg whitespace-nowrap"
                       style={{
-                        background: `${section.color}20`,
-                        color: section.color,
+                        background: item.value === "Future" ? "var(--cyber-border)" : `${section.color}20`,
+                        color: item.value === "Future" ? "var(--text-muted)" : section.color,
                       }}
                     >
-                      {item.value}
+                      {item.value === "Future" ? "🔒 Coming Soon" : item.value}
                     </p>
                   </div>
                   <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>

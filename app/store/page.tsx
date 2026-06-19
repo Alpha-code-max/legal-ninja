@@ -30,6 +30,7 @@ export default function StorePage() {
   const [purchased, setPurchased] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
   const [lastPurchasePrice, setLastPurchasePrice] = useState<number | null>(null);
+  const [lastReference, setLastReference] = useState<string | null>(null);
 
   // Check for ?payment=success query param after Paystack redirect
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function StorePage() {
     const reference = params.get("reference");
 
     if (params.get("payment") === "success" && reference) {
+      setLastReference(reference);
       setPurchased("✅ Payment received! Refreshing your balance...");
 
       // Verify transaction and refresh user balance
@@ -71,9 +73,8 @@ export default function StorePage() {
               setTimeout(() => setPurchased(null), 5000);
             });
           })
-          .catch((err) => {
-            setPurchased("⚠️ Payment processed but couldn't verify. Refresh to check your balance.");
-            setTimeout(() => setPurchased(null), 6000);
+          .catch(() => {
+            setPurchased("⚠️ Couldn't verify payment. Tap to retry, or refresh to check your balance.");
           });
       };
 
@@ -82,6 +83,26 @@ export default function StorePage() {
       window.history.replaceState({}, "", "/store");
     }
   }, [user]);
+
+  const retryVerification = () => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get("reference") || lastReference;
+    if (!reference) return;
+    setPurchased("✅ Retrying verification...");
+    api.verifyTransaction(reference)
+      .then(() => api.getMe())
+      .then((me) => {
+        user.setUser({
+          paid_questions_balance: me.paid_questions_balance,
+          earned_questions_balance: me.earned_questions_balance,
+          free_questions_remaining: me.free_questions_remaining,
+        });
+        setPurchased("✅ Payment successful! Questions added.");
+        setTimeout(() => setPurchased(null), 5000);
+      })
+      .catch(() => setPurchased("⚠️ Still couldn't verify. Tap to retry, or refresh to check your balance."));
+  };
 
   const handleSubscriptionPurchase = async (subscription: Subscription) => {
     if (!user.uid) { router.push("/auth/sign-in"); return; }
@@ -138,7 +159,8 @@ export default function StorePage() {
               initial={{ opacity: 0, scale: 0.9, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="cyber-card p-4 text-center relative overflow-hidden"
+              onClick={purchased.startsWith("⚠️") ? retryVerification : undefined}
+              className={cn("cyber-card p-4 text-center relative overflow-hidden", purchased.startsWith("⚠️") && "cursor-pointer")}
               style={{ borderColor: "var(--cyber-green)", boxShadow: "0 0 20px color-mix(in srgb, var(--cyber-green) 30%, transparent)" }}
             >
               <div className="absolute inset-0 opacity-5 bg-cyber-green" />
@@ -167,8 +189,8 @@ export default function StorePage() {
         <div className="grid grid-cols-2 gap-2">
           {(["subscriptions", "earn"] as Tab[]).map((t) => {
             const labels: Record<Tab, { label: string; emoji: string }> = {
-              subscriptions: { label: "Plans", emoji: "⭐" },
-              earn:    { label: "Earn Free",emoji: "🎯" },
+              subscriptions: { label: "Buy", emoji: "⭐" },
+              earn:    { label: "Earn Free", emoji: "🎯" },
             };
             return (
               <button key={t} onClick={() => setTab(t)}

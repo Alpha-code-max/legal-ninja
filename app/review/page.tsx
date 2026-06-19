@@ -98,16 +98,16 @@ function ReviewCard({ item, index, onFetchExplanation, isGuest }: {
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             Log in to unlock AI-powered legal explanations with case references and statute citations.
           </p>
-          <div className="flex gap-2 justify-center pt-1">
-            <a href="/auth/sign-in"
-              className="px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border transition-all"
-              style={{ color: "var(--cyber-cyan)", borderColor: "color-mix(in srgb, var(--cyber-cyan) 40%, transparent)", background: "color-mix(in srgb, var(--cyber-cyan) 8%, transparent)" }}>
-              Sign In
-            </a>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center pt-1">
             <a href="/auth/sign-up"
               className="px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border transition-all"
               style={{ color: "var(--cyber-purple)", borderColor: "color-mix(in srgb, var(--cyber-purple) 40%, transparent)", background: "color-mix(in srgb, var(--cyber-purple) 8%, transparent)" }}>
               Sign Up Free
+            </a>
+            <a href="/auth/sign-in"
+              className="px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border transition-all"
+              style={{ color: "var(--cyber-cyan)", borderColor: "color-mix(in srgb, var(--cyber-cyan) 40%, transparent)", background: "color-mix(in srgb, var(--cyber-cyan) 8%, transparent)" }}>
+              Sign In
             </a>
           </div>
         </div>

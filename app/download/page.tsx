@@ -15,12 +15,6 @@ const FEATURES = [
   { icon: "🤖", title: "AI Questions", desc: "Questions generated and curated by advanced AI models." },
 ];
 
-const SCREENSHOTS = [
-  { label: "Dashboard", color: "var(--cyber-cyan)" },
-  { label: "Quiz Duel", color: "var(--cyber-purple)" },
-  { label: "Leaderboard", color: "var(--cyber-gold)" },
-];
-
 export default function DownloadPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -143,7 +137,7 @@ export default function DownloadPage() {
                   </span>
                 </div>
                 <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-                  Download the APK and install directly on your Android device. Enable <strong className="text-white">"Install from unknown sources"</strong> in your device settings before installing.
+                  Download the APK and install directly on your Android device. Enable <strong className="text-white">"Install from unknown sources"</strong> in your device settings before installing — this is a normal Android requirement for apps installed outside the Play Store, not a security warning about this app.
                 </p>
 
                 {/* Install steps */}
@@ -269,44 +263,6 @@ export default function DownloadPage() {
               </form>
             )}
           </GlassCard>
-        </motion.div>
-
-        {/* App screenshot placeholders */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55, duration: 0.6 }}
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1 bg-cyber-border" />
-            <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-              App Screens
-            </span>
-            <div className="h-px flex-1 bg-cyber-border" />
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            {SCREENSHOTS.map((s) => (
-              <div key={s.label} className="flex flex-col items-center gap-2">
-                <div
-                  className="w-full aspect-[9/16] rounded-xl border flex items-center justify-center"
-                  style={{
-                    borderColor: `${s.color}30`,
-                    background: `${s.color}08`,
-                  }}
-                >
-                  <span className="text-[9px] font-black uppercase tracking-wider text-center px-2" style={{ color: s.color }}>
-                    Screenshot
-                    <br />
-                    Coming Soon
-                  </span>
-                </div>
-                <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-                  {s.label}
-                </p>
-              </div>
-            ))}
-          </div>
         </motion.div>
 
         {/* Features grid */}

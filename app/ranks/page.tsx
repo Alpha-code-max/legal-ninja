@@ -154,6 +154,9 @@ export default function RanksPage() {
                     {/* Progress bars */}
                     {!isUnlocked && user.uid && (
                       <div className="mt-3 space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                          Requires both bars to reach 100%
+                        </p>
                         <div>
                           <div className="flex justify-between items-center mb-1">
                             <p className="text-xs" style={{ color: "var(--text-muted)" }}>XP Progress</p>

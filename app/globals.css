@@ -108,6 +108,16 @@ h2 {
                2px 2px 0px color-mix(in srgb, var(--cyber-purple) 40%, transparent);
 }
 
+/* Reduce shadow intensity on small screens — full offsets blur legibility at small sizes */
+@media (max-width: 480px) {
+  h1 {
+    text-shadow: 1px 1px 0px color-mix(in srgb, var(--cyber-purple) 50%, transparent);
+  }
+  h2 {
+    text-shadow: 1px 1px 0px color-mix(in srgb, var(--cyber-cyan) 50%, transparent);
+  }
+}
+
 @layer utilities {
   .neon-text-cyan {
     color: var(--cyber-cyan);

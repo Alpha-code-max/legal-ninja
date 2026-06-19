@@ -114,23 +114,27 @@ export default function LeaderboardPage() {
         {myRank && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
             className="cyber-card p-3 flex items-center justify-between"
-            style={{ borderColor: "color-mix(in srgb, var(--cyber-cyan) 40%, transparent)" }}>
+            style={{ borderColor: "color-mix(in srgb, var(--cyber-gold) 40%, transparent)" }}>
             <span className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>Your rank</span>
-            <span className="text-lg font-black font-mono neon-text-cyan">#{myRank.rank}</span>
+            <span className="text-lg font-black font-mono neon-text-gold">#{myRank.rank}</span>
             <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{myRank.total_xp.toLocaleString()} XP</span>
           </motion.div>
         )}
 
         {/* Type tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {LEADERBOARD_CONFIG.types.map((type) => (
-            <button key={type} onClick={() => setActiveType(type)}
-              className={cn("px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap border transition-all",
-                activeType === type ? "border-cyber-cyan bg-cyber-cyan/10 shadow-neon-cyan" : "border-cyber-border hover:border-cyber-cyan/50")}
-              style={{ color: activeType === type ? "var(--cyber-cyan)" : "var(--text-muted)" }}>
-              {TYPE_LABELS[type]}
-            </button>
-          ))}
+        <div className="relative">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {LEADERBOARD_CONFIG.types.map((type) => (
+              <button key={type} onClick={() => setActiveType(type)}
+                className={cn("px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap border transition-all",
+                  activeType === type ? "border-cyber-cyan bg-cyber-cyan/10 shadow-neon-cyan" : "border-cyber-border hover:border-cyber-cyan/50")}
+                style={{ color: activeType === type ? "var(--cyber-cyan)" : "var(--text-muted)" }}>
+                {TYPE_LABELS[type]}
+              </button>
+            ))}
+          </div>
+          <div className="absolute right-0 top-0 bottom-1 w-6 pointer-events-none"
+               style={{ background: "linear-gradient(90deg, transparent, var(--cyber-bg))" }} />
         </div>
 
         {/* Podium */}
@@ -140,8 +144,13 @@ export default function LeaderboardPage() {
             {TYPE_LABELS[activeType]} Champions
           </p>
           {loading ? (
-            <div className="flex justify-center py-8">
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="text-3xl">⚖️</motion.div>
+            <div className="flex items-end justify-center gap-2 pb-1 animate-pulse">
+              {[16, 28, 12].map((h, i) => (
+                <div key={i} className="flex flex-col items-center gap-1">
+                  <div className="w-12 h-12 rounded-full" style={{ background: "var(--cyber-border)" }} />
+                  <div className="w-20 rounded-t-lg" style={{ height: `${h * 4}px`, background: "var(--cyber-border)" }} />
+                </div>
+              ))}
             </div>
           ) : (
             <PodiumIllustration top3={top3 as LeaderboardEntry[]} />
@@ -158,7 +167,11 @@ export default function LeaderboardPage() {
               </div>
             )}
             {loading && user.uid && (
-              <p className="text-center text-xs py-4" style={{ color: "var(--text-muted)" }}>Loading rankings…</p>
+              <div className="space-y-2 animate-pulse">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-12 rounded-xl" style={{ background: "var(--cyber-card-bg)" }} />
+                ))}
+              </div>
             )}
             {!loading && entries.length === 0 && user.uid && (
               <div className="cyber-card p-8 text-center">

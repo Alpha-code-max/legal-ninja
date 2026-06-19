@@ -78,6 +78,14 @@ export default function ProfilePage() {
   const [editUniversity, setEditUniversity] = useState(user.university ?? "");
   const [saving,     setSaving]     = useState(false);
   const [saveError,  setSaveError]  = useState("");
+  const [copied,     setCopied]     = useState(false);
+
+  useEffect(() => {
+    if (!editOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setEditOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editOpen]);
 
   // Sync profile from server on mount
   useEffect(() => {
@@ -279,18 +287,21 @@ export default function ProfilePage() {
                 Weak Areas
               </h3>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-4">
               {weakAreas.map((area, i) => (
                 <Pill key={area._id || area.subject || i} accent="red">
                   {area.subject.replace(/_/g, " ")}
                 </Pill>
               ))}
             </div>
+            <NeonButton variant="red" fullWidth size="sm" onClick={() => router.push("/quiz?mode=weak_area_focus")}>
+              🔥 Grind These Weak Areas
+            </NeonButton>
           </motion.div>
         )}
 
         {/* Educational Info */}
-        {(user.law_school || user.university) && (
+        {(user.law_school || user.university) ? (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -315,18 +326,36 @@ export default function ProfilePage() {
               )}
             </div>
           </motion.div>
+        ) : (
+          <button onClick={() => setEditOpen(true)}
+            className="cyber-card p-4 w-full text-left flex items-center gap-3 transition-all hover:border-cyber-cyan/50"
+            style={{ borderColor: "var(--cyber-border)" }}>
+            <span className="text-xl">🎓</span>
+            <span className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>Add your law school / university</span>
+          </button>
         )}
 
-        {/* Referral stats */}
-        {/* Referral Code */}
+        {/* Referral */}
         {user.referral_code && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.40 }}
-            className="cyber-card p-4 space-y-2"
+            className="cyber-card p-5 space-y-3"
           >
-            <p className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Your Referral Code</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🎁</div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider neon-text-green">Referrals</p>
+                  <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>+20 questions per invite</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black font-mono neon-text-green">{user.referral_count}</p>
+                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>referred</p>
+              </div>
+            </div>
             <div className="flex gap-2 items-center">
               <div className="flex-1 px-3 py-2 rounded-lg border font-mono text-xs font-black"
                    style={{ borderColor: "var(--cyber-border)", background: "var(--cyber-bg)", color: "var(--cyber-cyan)" }}>
@@ -335,7 +364,8 @@ export default function ProfilePage() {
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(user.referral_code || "");
-                  alert("Code copied!");
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
                 }}
                 className="px-2.5 py-2 rounded-lg border font-black text-[10px] transition-all"
                 style={{
@@ -344,34 +374,11 @@ export default function ProfilePage() {
                   background: "color-mix(in srgb, var(--cyber-cyan) 10%, transparent)"
                 }}
               >
-                Copy
+                {copied ? "Copied!" : "Copy"}
               </button>
             </div>
           </motion.div>
         )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
-          className="cyber-card p-5 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-2xl">🎁</div>
-            <div>
-              <p className="text-xs font-black uppercase tracking-wider neon-text-green">Referrals</p>
-              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>+20 questions per invite</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-2xl font-black font-mono neon-text-green">{user.referral_count}</p>
-            <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>referred</p>
-          </div>
-        </motion.div>
-
-        <NeonButton variant="red" fullWidth onClick={() => router.push("/quiz?mode=weak_area_focus")}>
-          🔥 Grind Weak Areas
-        </NeonButton>
 
         <NeonButton variant="cyan" fullWidth onClick={() => router.push("/quiz")}>
           ⚔️ Start New Battle
@@ -392,7 +399,10 @@ export default function ProfilePage() {
               <label className="text-[10px] uppercase tracking-widest font-black block mb-1.5" style={{ color: "var(--text-muted)" }}>Username</label>
               <input value={editName} onChange={(e) => setEditName(e.target.value)} maxLength={30}
                 className="w-full px-4 py-2.5 rounded-xl text-sm bg-transparent border focus:outline-none"
-                style={{ borderColor: "var(--cyber-border)", color: "var(--text-base)" }} />
+                style={{ borderColor: editName.trim().length === 0 ? "var(--cyber-red)" : "var(--cyber-border)", color: "var(--text-base)" }} />
+              {editName.trim().length === 0 && (
+                <p className="text-[10px] mt-1" style={{ color: "var(--cyber-red)" }}>Username can&apos;t be empty.</p>
+              )}
             </div>
 
             <div>
@@ -435,7 +445,7 @@ export default function ProfilePage() {
 
             <div className="flex gap-3 pt-1">
               <NeonButton variant="ghost" fullWidth onClick={() => setEditOpen(false)}>Cancel</NeonButton>
-              <NeonButton variant="cyan" fullWidth onClick={saveProfile} disabled={saving}>
+              <NeonButton variant="cyan" fullWidth onClick={saveProfile} disabled={saving || editName.trim().length === 0}>
                 {saving ? "Saving…" : "Save"}
               </NeonButton>
             </div>

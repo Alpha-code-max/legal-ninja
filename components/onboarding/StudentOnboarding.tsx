@@ -7,9 +7,10 @@ import { LAW_SCHOOLS, UNDERGRAD_INSTITUTIONS } from "@/lib/config/universities";
 
 interface StudentOnboardingProps {
   onComplete: () => void;
+  onSkip?: () => void;
 }
 
-export function StudentOnboarding({ onComplete }: StudentOnboardingProps) {
+export function StudentOnboarding({ onComplete, onSkip }: StudentOnboardingProps) {
   const [step, setStep] = useState<"track" | "university">("track");
   const [selectedTrack, setSelectedTrack] = useState<string>("");
   const [selectedUniversity, setSelectedUniversity] = useState<string>("");
@@ -120,6 +121,12 @@ export function StudentOnboarding({ onComplete }: StudentOnboardingProps) {
                 <div className="text-xs" style={{ color: "var(--text-muted)" }}>University Law Programs</div>
               </button>
             </div>
+
+            {onSkip && (
+              <button onClick={onSkip} className="w-full text-center text-xs font-bold py-2" style={{ color: "var(--text-muted)" }}>
+                Skip for now
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
